@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>TAKO TAKO LANDING</title>
+<style>
+  :root{
+    --neon-cyan:#26ffe6;
+    --neon-pink:#ff2e88;
+    --neon-amber:#ffb703;
+    --tako-red:#e05a5a;
+  }
+  html,body{
+    margin:0; padding:0; height:100%; background:#000; overflow:hidden;
+    font-family: 'Courier New', 'MS Gothic', monospace;
+    -webkit-user-select:none; user-select:none; touch-action:none;
+  }
+  #wrap{
+    position:relative; width:100%; height:100%;
+    display:flex; align-items:center; justify-content:center;
+    background:#000;
+  }
+  canvas{
+    box-shadow: 0 0 0 2px #0b3a4a, 0 0 40px 6px rgba(38,255,230,0.25);
+    max-width:100%; max-height:100%;
+  }
+  #scanlines{
+    position:absolute; inset:0; pointer-events:none; mix-blend-mode:overlay;
+    background: repeating-linear-gradient(
+      to bottom, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
+      transparent 2px, transparent 3px
+    );
+  }
+  #hud{
+    position:absolute; top:10px; left:0; right:0; z-index:6;
+    display:flex; justify-content:space-between; align-items:flex-start; gap:8px;
+    padding:0 16px; white-space:nowrap;
+    color:var(--neon-cyan); font-size:13px; letter-spacing:1px;
+    text-shadow: 0 0 6px var(--neon-cyan);
+    pointer-events:none;
+  }
+  #depth-bar-wrap{
+    position:absolute; top:76px; right:14px; width:14px; height:min(46vh,340px);
+    border:1px solid var(--neon-cyan); border-radius:3px; overflow:hidden;
+    background:rgba(0,20,30,0.5); z-index:3;
+  }
+  #depth-bar-fill{
+    position:absolute; bottom:0; left:0; right:0; height:0%;
+    background:linear-gradient(180deg,var(--neon-amber),var(--tako-red));
+    box-shadow:0 0 8px var(--neon-amber);
+  }
+  #title-screen, #end-screen{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    color:var(--neon-cyan); background:rgba(0,0,0,0.55); gap:14px; z-index:5;
+  }
+  #title-screen h1, #end-screen h1{
+    font-size:clamp(20px,5.6vw,36px); margin:0; color:var(--tako-red);
+    text-shadow: 0 0 12px var(--tako-red), 0 0 2px #fff;
+    letter-spacing:2px;
+  }
+  #title-screen p, #end-screen p{ margin:4px 0; font-size:13px; color:#9ff; max-width:320px; }
+  button.arcade{
+    font-family:inherit; font-size:16px; letter-spacing:2px;
+    background:transparent; color:var(--neon-amber);
+    border:2px solid var(--neon-amber); padding:10px 22px; border-radius:4px;
+    text-shadow:0 0 6px var(--neon-amber); box-shadow:0 0 10px rgba(255,183,3,0.4);
+    cursor:pointer;
+  }
+  button.arcade:active{ transform:scale(0.96); }
+  #ctrl{
+    position:absolute; top:38px; left:0; right:0; z-index:6;
+    display:flex; justify-content:flex-end; gap:6px; padding:0 16px;
+    pointer-events:none;
+  }
+  .cbtn{
+    flex:none; pointer-events:auto; cursor:pointer;
+    font-family:inherit; letter-spacing:0; text-shadow:none; white-space:nowrap;
+    background:rgba(2,20,30,0.7); border:1px solid var(--neon-cyan); color:var(--neon-cyan);
+    border-radius:4px; font-size:11px; padding:5px 8px; line-height:1.2;
+  }
+  .cbtn[data-on="0"]{ opacity:0.55; border-style:dashed; }
+  #quit-btn{ border-color:var(--neon-pink); color:var(--neon-pink); }
+  #quit-btn.gone{ display:none; }
+  .btnrow{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  #title-btn{ color:var(--neon-cyan); border-color:var(--neon-cyan); text-shadow:0 0 6px var(--neon-cyan); box-shadow:0 0 10px rgba(38,255,230,0.35); }
+  #title-screen, #end-screen, #gameover-screen{ padding:16px; box-sizing:border-box; overflow-y:auto; }
+  #title-screen p{ max-width:380px; line-height:1.55; }
+  #title-screen p.jp{ font-size:clamp(11px,3.3vw,14px); color:#d6fffa; text-wrap:balance; }
+  #title-screen p.en{ font-size:12px; color:#7fd8d0; text-wrap:balance; }
+  #title-screen p.keys{ font-size:11px; opacity:0.75; }
+  #title-screen .desc{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+  /* opening animation plays on the canvas; the text sits on dimmed bands at the top and bottom */
+  #title-screen{
+    justify-content:space-between; gap:0;
+    background:linear-gradient(180deg, rgba(0,14,34,.84) 0%, rgba(0,14,34,.8) 36%, rgba(0,14,34,0) 56%, rgba(0,14,34,0) 80%, rgba(0,0,0,.85) 100%);
+  }
+  #title-screen .top{ display:flex; flex-direction:column; align-items:center; gap:8px; padding-top:62px; }
+  #title-screen .top h1{ font-size:clamp(18px,5vw,30px); line-height:1.2; }
+  #title-screen .bottom{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .by{ font-size:clamp(15px,4.4vw,24px); font-weight:bold; letter-spacing:3px; color:var(--neon-amber); text-shadow:0 0 10px var(--neon-amber), 0 0 2px #fff; opacity:0; animation:byIn .8s 1.5s forwards; }
+  @keyframes byIn{ to{ opacity:.95; } }
+  #title-screen h1 .ch{ display:inline-block; animation:chIn .95s cubic-bezier(.2,.7,.3,1) both; }
+  @keyframes chIn{
+    0%{ transform:translateY(-190px); opacity:0; }
+    8%{ opacity:1; }
+    55%{ transform:translateY(0); }
+    70%{ transform:translateY(-22px); }
+    85%{ transform:translateY(0); }
+    93%{ transform:translateY(-6px); }
+    100%{ transform:translateY(0); }
+  }
+  @media (prefers-reduced-motion:reduce){ #title-screen h1 .ch, .by{ animation:none; opacity:1; } }
+  /* hide the in-game hint and touch pad while the title is up */
+  #title-screen:not([style*="display: none"]) ~ #hint, #title-screen:not([style*="display: none"]) ~ #dpad{ visibility:hidden; }
+  @media (max-width:380px){
+    #hud{ font-size:11px; letter-spacing:0; padding:0 10px; gap:6px; }
+    #ctrl{ padding:0 10px; gap:4px; }
+    .cbtn{ font-size:10px; padding:4px 6px; }
+  }
+  #dpad{
+    position:absolute; bottom:10px; left:0; right:0;
+    display:flex; justify-content:center; gap:10px; z-index:4;
+  }
+  .dbtn{
+    width:58px; height:58px;
+    border:2px solid var(--neon-cyan); color:var(--neon-cyan);
+    background:rgba(2,20,30,0.55); font-size:20px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 8px rgba(38,255,230,0.3);
+  }
+  #hint{
+    position:absolute; bottom:82px; left:0; right:0; text-align:center;
+    color:#7fd; font-size:11px; opacity:0.75; z-index:3; pointer-events:none;
+  }
+  @media (max-width:899px){
+    /* reserve room below the canvas for the horizontal D-pad row so it
+       sits under the seabed instead of covering it */
+    #wrap{ padding-bottom:84px; box-sizing:border-box; }
+  }
+  @media (min-width:900px){
+    #dpad{ display:none; }
+    #hint{ bottom:14px; }
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="440" height="700"></canvas>
+  <div id="scanlines"></div>
+  <div id="hud">
+    <div>深度 DEPTH <span id="depth-pct">0</span>%<br>残り TIME <span id="time-left">45</span>秒</div>
+    <div>SCORE <span id="score">0</span></div>
+  </div>
+  <div id="depth-bar-wrap"><div id="depth-bar-fill"></div></div>
+
+  <div id="ctrl">
+    <button class="cbtn" id="music-btn" data-on="1">♪ MUSIC ON</button>
+    <button class="cbtn" id="sfx-btn" data-on="1">SFX ON</button>
+    <button class="cbtn gone" id="quit-btn">QUIT</button>
+  </div>
+
+  <div id="title-screen">
+    <div class="top">
+      <h1>TAKO TAKO<br>LANDING</h1>
+      <div class="by">by T2R0</div>
+    <div class="desc">
+      <p class="jp">家がある海底まで降りたいけど　魚に食べられちゃう！！<br>左右と上に動けるよ　下に行く時は脱力で<br>制限時間内に海底につけるかな！</p>
+      <p class="en">You want to get down to the seabed where your home is, but the fish will eat you!!<br>You can move left, right and up. To go down, just relax!<br>Can you reach the seabed before time runs out?</p>
+    </div>
+    </div>
+    <div class="bottom">
+    <button class="arcade" id="start-btn">START</button>
+    <p class="keys">← → ↑ / D-padで移動<br>Move: ← → ↑ / D-pad</p>
+    </div>
+  </div>
+
+  <div id="end-screen" style="display:none;">
+    <h1 id="end-title">GAME OVER</h1>
+    <p id="end-msg">SCORE: 0</p>
+    <div class="btnrow"><button class="arcade" id="retry-btn">RETRY</button><button class="arcade" id="title-btn">TITLE</button></div>
+  </div>
+
+  <div id="hint">← → ↑ で移動(放置でも一定速度で沈みます)<br>Move: ← → ↑  ·  You sink at a steady speed on your own</div>
+  <div id="dpad">
+    <div class="dbtn" id="btn-left">◀</div>
+    <div class="dbtn" id="btn-up">▲</div>
+    <div class="dbtn" id="btn-right">▶</div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- image (Tako-san the diver) ---------- */
+const takoImg = new Image();
+takoImg.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAACICAYAAAAs9i/LAAACK0lEQVR4nO3dwUkeQRiAYX+REHLIyQosIFhLsB4P1iPWElKAFeSUQxAv2sEuZBhn/9fnuS648/Myh4+dXU8XB/fty9e31WvY8u/15bR6DVsuVy+AuQSOEzhO4DiB4wSOEzhu+Qy3N+c+3/38qKX8l5vHp83rq+dkOzhO4DiB4wSOEzhO4DiB46bPaOc+545aPSfbwXECxwkcJ3CcwHECxwkcNzyDffY5d9TsOdkOjhM4TuA4geMEjhM4TuC4q9ULGLU3R4469zneDo4TOE7gOIHjBI4TOE7guMPPwdf395vXnxff/8/Dw+QVjLGD4wSOEzhO4DiB4wSOEzju8HPw9x+3m9dnP69dff9RdnCcwHECxwkcJ3CcwHECxwkcJ3CcwHECxwkcJ3CcwHECxx3+efDf3782r88+l7z6/qPs4DiB4wSOEzhO4DiB4wSOy38veu87Wkdfn+9Fs0ngOIHjBI4TOE7gOIHjBI4TOE7gOIHjBI4TOE7gOIHjDn8uetTq572r2cFxAscJHCdwnMBxAscJHLd75vbo557rRs9N28FxAscJHCdwnMBxAscJHHdaPefOfn/33P/+6P3t4DiB4wSOEzhO4DiB4wSOm34uem9Oq1s9J9vBcQLHCRwncJzAcQLHCRw3PAePntvdex597vZ+/83j09Tn8XZwnMBxAscJHCdwnMBxAscNvx88+n99Ru+/Z/Ycvvr3ez/4kxM4TuA4geMEjhM4TuC4dwrjb2jn8RpyAAAAAElFTkSuQmCC";
+
+/* ---------- audio ---------- */
+let actx = null;
+let bgmMuted = false, sfxMuted = false;
+let bgmGain = null, sfxGain = null, silentEl = null;
+function ensureAudio(){
+  if(!actx){
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    bgmGain = actx.createGain();
+    bgmGain.gain.value = bgmMuted ? 0 : BGM_VOL;
+    bgmGain.connect(actx.destination);
+    sfxGain = actx.createGain();
+    sfxGain.gain.value = sfxMuted ? 0 : 1;
+    sfxGain.connect(actx.destination);
+  }
+  if(actx.state === "suspended") actx.resume();
+  // iPhone: the silent switch mutes Web Audio unless an HTML audio element is playing
+  try{
+    if(!silentEl){
+      silentEl = new Audio("data:audio/wav;base64,UklGRvQHAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YdAHAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==");
+      silentEl.loop = true;
+      silentEl.volume = 0.01;
+    }
+    const p = silentEl.play();
+    if(p && p.catch) p.catch(()=>{});
+  }catch(e){}
+}
+function applyMute(){
+  if(!actx) return;
+  if(bgmGain) bgmGain.gain.setValueAtTime(bgmMuted ? 0 : BGM_VOL, actx.currentTime);
+  if(sfxGain) sfxGain.gain.setValueAtTime(sfxMuted ? 0 : 1, actx.currentTime);
+}
+function tone(freq, dur, type, vol, glideTo){
+  if(sfxMuted || !actx) return;
+  const t0 = actx.currentTime;
+  const osc = actx.createOscillator();
+  const gain = actx.createGain();
+  osc.type = type || "sine";
+  osc.frequency.setValueAtTime(freq, t0);
+  if(glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t0+dur);
+  gain.gain.setValueAtTime((vol!==undefined?vol:0.15), t0);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+  osc.connect(gain).connect(sfxGain);
+  osc.start(t0);
+  osc.stop(t0+dur+0.02);
+}
+function noiseBurst(dur, vol, lp){
+  if(sfxMuted || !actx) return;
+  const t0 = actx.currentTime;
+  const bufferSize = actx.sampleRate*dur;
+  const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++){ data[i] = (Math.random()*2-1) * (1 - i/bufferSize); }
+  const src = actx.createBufferSource();
+  src.buffer = buffer;
+  const gain = actx.createGain();
+  gain.gain.setValueAtTime((vol!==undefined?vol:0.25), t0);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+  const filt = actx.createBiquadFilter();
+  filt.type = "lowpass"; filt.frequency.value = lp||1800;
+  src.connect(filt).connect(gain).connect(sfxGain);
+  src.start(t0);
+}
+function sfxBubble(){ tone(rand(500,900),0.06,"sine",0.06,rand(1100,1500)); }
+function sfxEaten(){ noiseBurst(0.4,0.32,900); tone(180,0.4,"sawtooth",0.22,50); }
+function sfxLand(){
+  [523,659,784,1046].forEach((f,i)=> setTimeout(()=>tone(f,0.16,"square",0.14),i*90));
+}
+function sfxTimeout(){
+  [700,560,430,320].forEach((f,i)=> setTimeout(()=>tone(f,0.22,"sawtooth",0.18),i*140));
+}
+/* ---------- BGM (chiptune sequencer) ---------- */
+const BGM_VOL = 0.5;
+let bgmTimer = null, bgmStep = 0, bgmNextTime = 0, noiseBuf = null;
+
+function bgmNote(t, midi, dur, type, vol){
+  const len = Math.max(dur, 0.03);
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(440*Math.pow(2,(midi-69)/12), t);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(vol, t+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+len);
+  o.connect(g); g.connect(bgmGain);
+  o.start(t); o.stop(t+len+0.03);
+}
+function bgmHat(t, vol){
+  if(!noiseBuf){
+    const n = Math.floor(actx.sampleRate*0.05);
+    noiseBuf = actx.createBuffer(1, n, actx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for(let i=0;i<n;i++) d[i] = Math.random()*2-1;
+  }
+  const s = actx.createBufferSource(); s.buffer = noiseBuf;
+  const f = actx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 6500;
+  const g = actx.createGain();
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+0.04);
+  s.connect(f); f.connect(g); g.connect(bgmGain);
+  s.start(t);
+}
+function bgmPump(){
+  if(!actx) return;
+  if(bgmNextTime < actx.currentTime - 0.1) bgmNextTime = actx.currentTime + 0.05;
+  while(bgmNextTime < actx.currentTime + 0.25){
+    bgmPlayStep(bgmStep, bgmNextTime);
+    bgmNextTime += bgmStepDur();
+    bgmStep++;
+  }
+}
+function startBgm(){
+  stopBgm();
+  if(!actx || !bgmGain) return;
+  bgmStep = 0;
+  bgmNextTime = actx.currentTime + 0.1;
+  bgmTimer = setInterval(bgmPump, 40);
+  bgmPump();
+}
+function stopBgm(){ if(bgmTimer) clearInterval(bgmTimer); bgmTimer = null; }
+
+// Calm underwater loop: C - Am - F - G. Speeds up in the last 10 seconds.
+const BGM_CHORDS = [
+  { bass:60, arp:[72,76,79,76,84,79,76,79], mel:[79,0,0,76,0,0,72,0] },
+  { bass:57, arp:[69,72,76,72,81,76,72,76], mel:[81,0,0,76,0,0,72,0] },
+  { bass:53, arp:[65,69,72,69,77,72,69,72], mel:[77,0,0,72,0,77,81,0] },
+  { bass:55, arp:[67,71,74,71,79,74,71,74], mel:[79,0,83,0,86,0,83,79] },
+];
+function bgmStepDur(){
+  return state.timeLeft <= 10 ? 0.21 : 0.27;
+}
+function bgmPlayStep(step, t){
+  const ch = BGM_CHORDS[Math.floor(step/8) % 4];
+  const s = step % 8;
+  const d = bgmStepDur();
+  bgmNote(t, ch.arp[s], d*1.4, "triangle", 0.07);
+  if(s===0 || s===4) bgmNote(t, ch.bass, d*3.6, "triangle", 0.13);
+  const m = ch.mel[s];
+  if(m) bgmNote(t, m, d*2.4, "sine", 0.11);
+}
+/* ---------- END BGM ---------- */
+
+/* ---------- canvas ---------- */
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const BW = canvas.width, BH = canvas.height;
+
+/* ---------- constants ---------- */
+const TOP_Y = 34;                 // sea surface line (start)
+const GROUND_H = 70;               // seabed strip height
+const PLAYER_W = 46, PLAYER_H = 46;     // hitbox
+const SPR_H = 46, SPR_W = Math.round(46*46/54); // drawn pixel-art octopus (coarse pixels, like the fish)
+const BASE_Y = BH - GROUND_H - 34; // landing depth (player top reaching this = success)
+const FALL_SPEED = 46;             // constant automatic sinking speed (px/s) - always applied
+const TIME_LIMIT = 45;              // seconds allowed to reach the seabed
+const MOVE_SPEED = 150;            // player-controlled speed in any of the 4 directions
+function rand(min,max){ return min + Math.random()*(max-min); }
+
+/* ---------- state ---------- */
+let state = { running:false, score:0, depthPct:0, timeLeft:TIME_LIMIT, phase:"play" };
+let landAnim = null;
+/* ---------- takotsubo (octopus pot): the home on the seabed ---------- */
+const POT_S = 1;                             // pot sprite scale
+const POT_OPEN_X = 338;                      // the mouth faces left; everything right of this line is hidden behind the pot
+const POT_CY = BASE_Y + PLAYER_H/2;       // mouth height = the octopus' centre when it has landed
+
+let player = { x: BW/2-PLAYER_W/2, y: TOP_Y, w:PLAYER_W, h:PLAYER_H };
+let fish = []; // {x,y,w,h,vx,color,tailPhase}
+let bubbles = [];
+let spawnTimer = 1.2;
+let elapsed = 0;
+
+for(let i=0;i<26;i++){
+  bubbles.push({x:Math.random()*BW, y:Math.random()*BH, r:Math.random()*3+1, s:Math.random()*22+10});
+}
+
+const FISH_COLORS = ["#7fd8ff","#ffb703","#ff6b9d","#9dff8f","#c48bff"];
+
+// 3 speed types: slower fish are bigger and flap their mouths lazily,
+// faster fish are smaller/darter-like and paku-paku quicker.
+const FISH_TYPES = [
+  { name:"slow",   speedMin:45,  speedMax:75,  sizeMin:48, sizeMax:62, mouthSpeed:3.2 },
+  { name:"medium", speedMin:95,  speedMax:135, sizeMin:34, sizeMax:48, mouthSpeed:5.5 },
+  { name:"fast",   speedMin:165, speedMax:215, sizeMin:24, sizeMax:36, mouthSpeed:9.0 },
+];
+
+function spawnFish(){
+  const depthFrac = Math.min(1, (player.y-TOP_Y)/(BASE_Y-TOP_Y));
+  const dir = Math.random()<0.5 ? 1 : -1;
+  const y = rand(TOP_Y+40, BASE_Y-10);
+  // deeper water skews the odds toward the faster types
+  const roll = Math.random() + depthFrac*0.35;
+  fish.push(makeFish(y, dir, roll<0.55 ? 0 : (roll<1.0 ? 1 : 2), depthFrac*40));
+}
+function makeFish(y, dir, typeIdx, extraSpeed){
+  const type = FISH_TYPES[typeIdx];
+  const w = rand(type.sizeMin, type.sizeMax), h = w*0.55;
+  const speed = rand(type.speedMin, type.speedMax) + (extraSpeed||0);
+  return ({
+    x: dir===1 ? -w-10 : BW+w+10,
+    y, w, h, vx: dir*speed, dir,
+    color: FISH_COLORS[Math.floor(Math.random()*FISH_COLORS.length)],
+    tailPhase: Math.random()*Math.PI*2,
+    mouthPhase: Math.random()*Math.PI*2,
+    mouthSpeed: type.mouthSpeed,
+    speedType: type.name,
+  });
+}
+
+/* ---------- input ---------- */
+const keys = { up:false, left:false, right:false };
+window.addEventListener("keydown", e=>{
+  if(e.code==="ArrowLeft") keys.left=true;
+  if(e.code==="ArrowRight") keys.right=true;
+  if(e.code==="ArrowUp") keys.up=true;
+  if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.code)) e.preventDefault();
+});
+window.addEventListener("keyup", e=>{
+  if(e.code==="ArrowLeft") keys.left=false;
+  if(e.code==="ArrowRight") keys.right=false;
+  if(e.code==="ArrowUp") keys.up=false;
+});
+function bindHold(el, onDown, onUp){
+  el.addEventListener("touchstart", e=>{ e.preventDefault(); onDown(); }, {passive:false});
+  el.addEventListener("touchend", e=>{ e.preventDefault(); onUp(); }, {passive:false});
+  el.addEventListener("mousedown", e=>{ e.preventDefault(); onDown(); });
+  el.addEventListener("mouseup", e=>{ e.preventDefault(); onUp(); });
+  el.addEventListener("mouseleave", ()=> onUp());
+}
+bindHold(document.getElementById("btn-left"), ()=>keys.left=true, ()=>keys.left=false);
+bindHold(document.getElementById("btn-right"), ()=>keys.right=true, ()=>keys.right=false);
+bindHold(document.getElementById("btn-up"), ()=>keys.up=true, ()=>keys.up=false);
+
+/* ---------- helpers ---------- */
+function rectsOverlap(a,b){
+  return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+}
+// "Eaten" only counts the front third of the fish's body (the mouth end),
+// not the whole fish — the mouth always faces the direction it's swimming.
+function fishMouthHitbox(f){
+  const thirdW = f.w/3;
+  const x = f.dir>0 ? (f.x + f.w/2 - thirdW) : (f.x - f.w/2);
+  return { x, y: f.y-f.h/2, w: thirdW, h: f.h };
+}
+
+/* ---------- update ---------- */
+function update(dt){
+  for(const b of bubbles){
+    b.y -= b.s*dt;
+    if(b.y<-4){ b.y=BH+4; b.x=Math.random()*BW; }
+  }
+  if(titleMode){ demoUpdate(dt); return; }
+  if(!state.running) return;
+  if(state.phase === "landing"){ updateLanding(dt); return; }
+
+  elapsed += dt;
+
+  // countdown to reach the seabed
+  state.timeLeft -= dt;
+  if(state.timeLeft <= 0){
+    state.timeLeft = 0;
+    updateHud();
+    triggerEnd(false, "timeout");
+    return;
+  }
+
+  // vertical: constant automatic sink, plus player-controlled up on top of it
+  let vy = FALL_SPEED;
+  if(keys.up) vy -= MOVE_SPEED;
+  let vx = 0;
+  if(keys.left) vx -= MOVE_SPEED;
+  if(keys.right) vx += MOVE_SPEED;
+
+  player.x += vx*dt;
+  player.y += vy*dt;
+  player.x = Math.max(6, Math.min(BW-player.w-6, player.x));
+  player.y = Math.max(TOP_Y, Math.min(BASE_Y, player.y));
+
+  state.depthPct = Math.round(100 * (player.y-TOP_Y)/(BASE_Y-TOP_Y));
+  state.score = Math.max(state.score, Math.round(elapsed*10 + state.depthPct*3));
+
+  // fish spawn/move
+  spawnTimer -= dt;
+  if(spawnTimer<=0){
+    spawnFish();
+    spawnTimer = Math.max(0.45, 1.3 - state.depthPct*0.008) * rand(0.7,1.3);
+  }
+  for(const f of fish){
+    f.x += f.vx*dt;
+    f.tailPhase += dt*8;
+    f.mouthPhase += dt*f.mouthSpeed;
+  }
+  fish = fish.filter(f => f.x > -f.w-40 && f.x < BW+f.w+40);
+
+  // collision
+  for(const f of fish){
+    if(rectsOverlap(player, fishMouthHitbox(f))){
+      triggerEnd(false, "eaten");
+      return;
+    }
+  }
+
+  // reached the seabed: the octopus walks home into its pot
+  if(player.y >= BASE_Y-0.5){
+    startLanding();
+    return;
+  }
+
+  updateHud();
+}
+
+function startLanding(){
+  state.phase = "landing";
+  state.depthPct = 100;
+  player.y = BASE_Y;
+  landAnim = { stage:"approach", t:0, step:0, wait:0 };
+  keys.up = keys.left = keys.right = false;
+  updateHud();
+  tone(300,0.12,"sine",0.15,160); // soft touchdown
+}
+function updateLanding(dt){
+  const A = landAnim;
+  A.t += dt;
+  for(const f of fish){ f.x += f.vx*dt; f.tailPhase += dt*8; f.mouthPhase += dt*f.mouthSpeed; }
+  fish = fish.filter(f => f.x > -f.w-40 && f.x < BW+f.w+40);
+  const waitX = POT_OPEN_X - 110;
+  if(A.stage === "approach"){
+    if(player.x > waitX){ player.x = Math.max(waitX, player.x - 240*dt); }
+    else { A.stage = "walk"; A.t = 0; A.step = 0; }
+  } else if(A.stage === "walk"){
+    player.x += 110*dt;                                   // walk right, towards the pot
+    player.y = BASE_Y - Math.abs(Math.sin(A.t*9))*7;      // little hops
+    A.step += dt;
+    if(A.step > 0.35){ A.step = 0; tone(420,0.05,"sine",0.1,300); }
+    if(player.x >= POT_OPEN_X + 2){
+      player.x = POT_OPEN_X + 2; player.y = BASE_Y;
+      A.stage = "inside"; A.wait = 0;
+      tone(520,0.14,"sine",0.18,220);                     // plop
+    }
+  } else if(A.stage === "inside"){
+    A.wait += dt;
+    if(A.wait > 0.6) triggerEnd(true);
+  }
+}
+
+function updateHud(){
+  document.getElementById("depth-pct").textContent = state.depthPct;
+  document.getElementById("score").textContent = state.score;
+  document.getElementById("depth-bar-fill").style.height = state.depthPct + "%";
+  const timeEl = document.getElementById("time-left");
+  timeEl.textContent = Math.ceil(state.timeLeft);
+  timeEl.style.color = state.timeLeft <= 10 ? "var(--neon-pink)" : "";
+  timeEl.style.textShadow = state.timeLeft <= 10 ? "0 0 6px var(--neon-pink)" : "";
+}
+
+/* ---------- draw ---------- */
+function bgColorAt(frac){
+  // interpolate from bright shallow blue to near-black deep sea
+  const top = [70,190,235], bottom = [3,8,26];
+  const r = Math.round(top[0]+(bottom[0]-top[0])*frac);
+  const g = Math.round(top[1]+(bottom[1]-top[1])*frac);
+  const b = Math.round(top[2]+(bottom[2]-top[2])*frac);
+  return `rgb(${r},${g},${b})`;
+}
+const WEEDS = [
+  {x:16,h:15,c:"#2f8f4e"},{x:50,h:10,c:"#3fae5f"},{x:84,h:13,c:"#2f8f4e"},
+  {x:170,h:9,c:"#3fae5f"},{x:196,h:14,c:"#2f8f4e"},{x:250,h:11,c:"#3fae5f"},
+];
+let seaOff = 0;   // how far the seabed, seaweed and pot are still below the screen
+function drawBackground(){
+  const frac = Math.max(0, Math.min(1, (player.y-TOP_Y)/(BASE_Y-TOP_Y)));
+  const grad = ctx.createLinearGradient(0,0,0,BH);
+  grad.addColorStop(0, bgColorAt(Math.max(0,frac-0.15)));
+  grad.addColorStop(1, bgColorAt(Math.min(1,frac+0.15)));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,BW,BH);
+
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  for(const b of bubbles){
+    ctx.beginPath();
+    ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // surface waves (only near the starting depth, they fade as you sink)
+  const tt = performance.now()/1000;
+  const wa = Math.max(0, Math.min(1, 1 - frac*3));
+  if(wa>0){
+    ctx.save(); ctx.globalAlpha = wa;
+    for(let x=0;x<BW;x+=6){
+      const y = Math.round(Math.sin(tt*1.8+x*.06)*2)*3;
+      ctx.fillStyle="#d9f6ff"; ctx.fillRect(x, 4+y, 6, 6);
+      ctx.fillStyle="#7fd8ff"; ctx.fillRect(x, 10+y, 6, 6);
+    }
+    ctx.restore();
+  }
+  // seabed, seaweed and pot are not there at first; they rise from below as you get deeper
+  let app = titleMode ? 1 : Math.max(0, Math.min(1, (frac-0.3)/0.62));
+  app = 1 - (1-app)*(1-app);
+  seaOff = (1-app)*170;
+  const groundY = BH-GROUND_H + seaOff;
+  ctx.fillStyle = "#1a1032";
+  ctx.fillRect(0, groundY, BW, GROUND_H);
+  ctx.fillStyle = "#241748";
+  for(let x=0;x<BW;x+=26){
+    ctx.beginPath();
+    ctx.ellipse(x+13, groundY, 15, 8, 0, Math.PI, Math.PI*2);
+    ctx.fill();
+  }
+  // seaweed swaying on the seabed (6px cells)
+  for(const w of WEEDS){
+    for(let k=0;k<w.h;k++){
+      const off = Math.round(Math.sin(tt*1.6+k*.4+w.x)*k*.25)*5;
+      ctx.fillStyle = w.c; ctx.fillRect(w.x+off, groundY-k*6-6, 10, 6);
+      if(k%3===1){ ctx.fillStyle="#1e6a38"; ctx.fillRect(w.x+off+10, groundY-k*6-6, 5, 6); }
+    }
+  }
+  // landing marker line
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, (app-0.5)*2);
+  ctx.strokeStyle = "rgba(38,255,230,0.5)";
+  ctx.setLineDash([6,6]);
+  ctx.beginPath();
+  ctx.moveTo(0, BASE_Y+player.h/2);
+  ctx.lineTo(BW, BASE_Y+player.h/2);
+  ctx.stroke();
+  ctx.restore();
+}
+/* ---------- pixel-art fish ---------- */
+// body 11 x 6 cells, facing right. B = body, L = belly, E = eye
+const FISH_BODY = [
+  "...BBBBB...",
+  ".BBBBBBBBB.",
+  "BBBBBBBBEBB",
+  "BBBBBBBBBBB",
+  "LLLLLLLLLLL",
+  ".LLLLLLLLL.",
+];
+const FISH_FIN = [[4,-1],[5,-1],[6,-1],[5,6]];            // dorsal / ventral fin cells (col,row)
+const FISH_TAIL = [ // [col, rowFrom, rowTo] — x < 0 is behind the body
+  [-1,2,3],[-2,1,4],[-3,0,5],
+];
+const fishPal = {};
+function mixHex(hex, to, t){
+  const n=parseInt(hex.slice(1),16), r=n>>16, g=(n>>8)&255, b=n&255;
+  const m=v=>Math.round(v+(to-v)*t);
+  return "rgb("+m(r)+","+m(g)+","+m(b)+")";
+}
+function fishColors(hex){
+  return fishPal[hex] || (fishPal[hex] = { body:hex, belly:mixHex(hex,255,0.55), fin:mixHex(hex,0,0.28) });
+}
+function drawFish(f){
+  const w=f.w, c=w/11;
+  const pal = fishColors(f.color);
+  const wag = Math.round(Math.sin(f.tailPhase));              // -1, 0, +1 rows
+  const open = Math.abs(Math.sin(f.mouthPhase));              // 0 closed .. 1 wide
+  const lvl = open<0.25 ? 0 : (open<0.65 ? 1 : 2);
+  // collect filled cells in a map "col,row" -> colour
+  const cells = new Map();
+  const put=(x,y,col)=>cells.set(x+","+y,col);
+  FISH_BODY.forEach((row,y)=>{ for(let x=0;x<11;x++){
+    const ch=row[x]; if(ch==="B") put(x,y,pal.body); else if(ch==="L") put(x,y,pal.belly); else if(ch==="E") put(x,y,"#04101a");
+  }});
+  FISH_FIN.forEach(([x,y])=>put(x,y,pal.fin));
+  FISH_TAIL.forEach(([x,y0,y1])=>{ const dy = x<=-2 ? wag : 0; for(let y=y0;y<=y1;y++) put(x,y+dy,pal.fin); });
+  // mouth: dark gape at the front tip (cells beyond the body too)
+  const mouth = lvl===0 ? [[11,3]]
+              : lvl===1 ? [[10,3],[11,2],[11,3],[11,4]]
+                        : [[9,3],[10,2],[10,3],[10,4],[11,1],[11,2],[11,3],[11,4]];
+  mouth.forEach(([x,y])=>put(x,y,"#6a1020"));
+  ctx.save();
+  ctx.translate(f.x, f.y);
+  if(f.dir<0) ctx.scale(-1,1);
+  const ox=-w/2, oy=-c*3;
+  ctx.imageSmoothingEnabled=false;
+  // outline: every empty neighbour of a filled cell becomes black (open mouth is left as a dark hole)
+  ctx.fillStyle="#04101a";
+  const ol=new Set();
+  cells.forEach((_,k)=>{ const [x,y]=k.split(",").map(Number);
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>{ const kk=(x+dx)+","+(y+dy); if(!cells.has(kk)) ol.add(kk); }); });
+  ol.forEach(k=>{ const [x,y]=k.split(",").map(Number); ctx.fillRect(ox+x*c-0.25, oy+y*c-0.25, c+0.5, c+0.5); });
+  cells.forEach((col,k)=>{ const [x,y]=k.split(",").map(Number);
+    ctx.fillStyle=col; ctx.fillRect(ox+x*c-0.25, oy+y*c-0.25, c+0.5, c+0.5); });
+  ctx.restore();
+}
+function drawOctoAt(cx, bottom, sc){
+  const w=SPR_W*sc, h=SPR_H*sc;
+  ctx.save();
+  ctx.shadowColor = "#26ffe6"; ctx.shadowBlur = 12;
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(takoImg, cx-w/2, bottom-h, w, h);
+  ctx.restore();
+}
+function drawPlayer(){
+  let sc = 1;
+  if(state.phase === "landing" && landAnim && landAnim.stage !== "approach"){
+    // shrink a little as the octopus squeezes into the pot
+    const prog = Math.max(0, Math.min(1, (player.x - (POT_OPEN_X-110)) / 110));
+    sc = 1 - 0.22*prog;
+  }
+  drawOctoAt(player.x+player.w/2, player.y+player.h/2+SPR_H/2, sc);
+}
+/* ---------- pixel-art takotsubo (pot), pre-rendered once ---------- */
+const POT_C = 4;                                   // cell size in px
+let potBackCv = null, potFrontCv = null;
+function buildPotSprites(){
+  const C = POT_C;
+  // --- front: body of the pot, mouth open on the left edge (x = 0) ---
+  const FW = 26, FH = 20;                           // 104 x 80 px
+  const fc = document.createElement("canvas"); fc.width = FW*C; fc.height = FH*C;
+  const g = fc.getContext("2d");
+  const half = px => px < 45 ? 26 + 12*Math.sin(px/45*Math.PI/2) : 38*Math.sqrt(Math.max(0, 1-((px-45)/57)**2));
+  const fill = Array.from({length:FH}, ()=>Array(FW).fill(false));
+  for(let j=0;j<FH;j++) for(let i=0;i<FW;i++){
+    const yc = (j+0.5-FH/2)*C;                      // relative to the pot centre line
+    if(Math.abs(yc) <= half(i*C+C/2)) fill[j][i] = true;
+  }
+  const edge = (i,j)=> !fill[j][i] ? false :
+    (j===0 || !fill[j-1][i] || j===FH-1 || !fill[j+1][i] || i===FW-1 || !fill[j][i+1]);
+  const shade = ["#f2b479","#dc8f56","#dc8f56","#c67444","#c67444","#b4623a","#b4623a","#a2552f","#a2552f","#8a4429",
+                 "#8a4429","#7a3a25","#7a3a25","#6f3524"];  // top -> bottom (by relative position)
+  for(let j=0;j<FH;j++) for(let i=0;i<FW;i++){
+    if(!fill[j][i]) continue;
+    let col;
+    if(edge(i,j)) col = "#2e140e";
+    else {
+      const rel = (j+0.5)/FH;                      // 0 top .. 1 bottom
+      col = shade[Math.min(shade.length-1, Math.floor(rel*shade.length))];
+    }
+    g.fillStyle = col; g.fillRect(i*C, j*C, C, C);
+  }
+  // top outline along the open mouth edge is kept, only the left edge stays open
+  // rope bands (two curved rows of cream cells around the neck)
+  g.fillStyle = "#ead9a6";
+  for(const bi of [5,7]){
+    for(let j=1;j<FH-1;j++){
+      const bow = Math.round(Math.sin((j/(FH-1))*Math.PI)*1.2);   // slight curve
+      const i = bi + bow;
+      if(fill[j][i] && !edge(i,j)) g.fillRect(i*C, j*C, C, C);
+    }
+  }
+  // glaze highlight + a few speckles
+  g.fillStyle = "rgba(255,240,215,0.55)";
+  for(let i=11;i<=16;i++) g.fillRect(i*C, 3*C, C, C);
+  for(let i=13;i<=15;i++) g.fillRect(i*C, 2*C, C, C);
+  g.fillStyle = "rgba(60,25,15,0.35)";
+  [[18,12],[21,9],[12,14],[19,15],[15,11]].forEach(([i,j])=>{ if(fill[j][i] && !edge(i,j)) g.fillRect(i*C, j*C, C, C); });
+  potFrontCv = fc;
+
+  // --- back: dark inside of the mouth (vertical ellipse, 10 x 26 px radii) ---
+  const BW_ = 6, BH_ = 14;                          // 24 x 56 px, centred on the mouth
+  const bc = document.createElement("canvas"); bc.width = BW_*C; bc.height = BH_*C;
+  const h = bc.getContext("2d");
+  const inE = (i,j)=>{ const x=(i+0.5-BW_/2)*C/10, y=(j+0.5-BH_/2)*C/26; return x*x+y*y <= 1; };
+  for(let j=0;j<BH_;j++) for(let i=0;i<BW_;i++){
+    if(!inE(i,j)) continue;
+    const rim = !(i>0&&inE(i-1,j)&&i<BW_-1&&inE(i+1,j)&&j>0&&inE(i,j-1)&&j<BH_-1&&inE(i,j+1));
+    h.fillStyle = rim ? "#e3a56f" : "#07030f"; h.fillRect(i*C, j*C, C, C);
+  }
+  potBackCv = bc;
+}
+function drawPotBack(){
+  if(!potBackCv) buildPotSprites();
+  ctx.save(); ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(potBackCv, POT_OPEN_X - potBackCv.width*POT_S/2, POT_CY + seaOff - potBackCv.height*POT_S/2, potBackCv.width*POT_S, potBackCv.height*POT_S);
+  ctx.restore();
+}
+function drawPotFront(){
+  if(!potFrontCv) buildPotSprites();
+  ctx.save(); ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(potFrontCv, POT_OPEN_X, POT_CY + seaOff - potFrontCv.height*POT_S/2, potFrontCv.width*POT_S, potFrontCv.height*POT_S);
+  ctx.restore();
+}
+/* ---------- opening animation (plays behind the title screen) ---------- */
+let titleMode = true;
+const L = {};
+function demoInit(){ L.t=0; L.p=0; L.fish=[]; L.hunt=1.2; L.amb=0.4; L.dir=1; }
+function demoUpdate(dt){
+  L.t += dt;
+  L.hunt -= dt; L.amb -= dt;
+  if(L.hunt<=0){ L.hunt=6; const f=makeFish(POT_CY-96, L.dir, 1, 0); f.vx = L.dir*125; f.hunter=true; L.fish.push(f); L.dir*=-1; }
+  if(L.amb<=0){ L.amb=rand(1.6,3.0); const d=Math.random()<.5?1:-1; L.fish.push(makeFish(rand(110,POT_CY-150), d, Math.random()<.6?0:2, 0)); }
+  let near=false;
+  for(const f of L.fish){ f.x+=f.vx*dt; f.tailPhase+=dt*8; f.mouthPhase+=dt*f.mouthSpeed;
+    if(f.hunter && f.x>POT_OPEN_X-190 && f.x<POT_OPEN_X+40) near=true; }
+  L.fish = L.fish.filter(f=>f.x>-f.w-40 && f.x<BW+f.w+40);
+  const want = near ? 0 : 1;
+  L.p += Math.max(-dt*3.2, Math.min(dt*1.1, want-L.p));
+}
+function demoRender(){
+  drawBackground();
+  drawPotBack();
+  const hid = POT_OPEN_X+30, peek = POT_OPEN_X-6+Math.sin(L.t*.9)*3;
+  drawOctoAt(hid+(peek-hid)*L.p, POT_CY+SPR_H/2-2, 1);
+  drawPotFront();
+  for(const f of L.fish) drawFish(f);
+}
+function bounceTitle(){
+  const h=document.querySelector("#title-screen h1"); if(!h) return;
+  let i=0;
+  h.innerHTML=["TAKO TAKO","LANDING"].map(line=>[...line].map(ch=>
+    ch===" " ? "&nbsp;" : '<span class="ch" style="animation-delay:'+(0.1+(i++)*0.07).toFixed(2)+'s">'+ch+'</span>').join("")).join("<br>");
+  const by=document.querySelector("#title-screen .by");
+  if(by){ by.style.animation="none"; void by.offsetWidth; by.style.animation=""; }
+}
+function render(){
+  if(titleMode){ demoRender(); return; }
+  drawBackground();
+  drawPotBack();
+  const entering = state.phase === "landing" && landAnim && (landAnim.stage === "walk" || landAnim.stage === "inside");
+  if(!entering) drawPotFront();            // while playing, the pot sits behind the octopus
+  for(const f of fish) drawFish(f);
+  drawPlayer();
+  if(entering) drawPotFront();             // while walking in, the pot covers the octopus: it goes inside
+}
+
+/* ---------- loop ---------- */
+let lastTime = 0;
+function loop(ts){
+  if(!lastTime) lastTime = ts;
+  const dt = Math.min(0.033, (ts-lastTime)/1000);
+  lastTime = ts;
+  update(dt);
+  render();
+  if(Math.random()<0.01) sfxBubble();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ---------- flow control ---------- */
+function triggerEnd(success, reason){
+  state.running = false;
+  stopBgm();
+  quitBtn.classList.add("gone");
+  const titles = success ? ["着地成功!","LANDING SUCCESS!"] : (reason==="timeout" ? ["タイムアップ…","TIME UP…"] : ["食べられた…","EATEN…"]);
+  document.getElementById("end-title").innerHTML = titles[0] + '<br><span style="font-size:0.5em;letter-spacing:1px">' + titles[1] + '</span>';
+  document.getElementById("end-title").style.color = success ? "var(--neon-cyan)" : "var(--neon-pink)";
+  document.getElementById("end-title").style.textShadow = success
+    ? "0 0 12px var(--neon-cyan)" : "0 0 12px var(--neon-pink)";
+  document.getElementById("end-msg").textContent = "SCORE: " + state.score;
+  document.getElementById("end-screen").style.display = "flex";
+  if(success) sfxLand(); else if(reason==="timeout") sfxTimeout(); else sfxEaten();
+}
+function startGame(){
+  ensureAudio();
+  titleMode = false;
+  state.score = 0; state.depthPct = 0; state.timeLeft = TIME_LIMIT;
+  player = { x: BW/2-PLAYER_W/2, y: TOP_Y, w:PLAYER_W, h:PLAYER_H };
+  fish = []; spawnTimer = 1.1; elapsed = 0;
+  document.getElementById("title-screen").style.display = "none";
+  document.getElementById("end-screen").style.display = "none";
+  state.phase = "play"; landAnim = null;
+  state.running = true;
+  updateHud();
+  startBgm();
+  quitBtn.classList.remove("gone");
+}
+document.getElementById("start-btn").addEventListener("click", startGame);
+document.getElementById("retry-btn").addEventListener("click", startGame);
+function goTitle(){
+  state.running = false;
+  stopBgm();
+  keys.up = keys.left = keys.right = false;
+  state.score = 0; state.depthPct = 0; state.timeLeft = TIME_LIMIT; state.phase = "play"; landAnim = null;
+  player = { x: BW/2-PLAYER_W/2, y: TOP_Y, w:PLAYER_W, h:PLAYER_H };
+  fish = []; elapsed = 0;
+  updateHud();
+  document.getElementById("end-screen").style.display = "none";
+  document.getElementById("title-screen").style.display = "flex";
+  quitBtn.classList.add("gone");
+  titleMode = true; demoInit(); bounceTitle();
+}
+const quitBtn = document.getElementById("quit-btn");
+function refreshAudioButtons(){
+  const mb = document.getElementById("music-btn"), sb = document.getElementById("sfx-btn");
+  mb.textContent = bgmMuted ? "♪ MUSIC OFF" : "♪ MUSIC ON";
+  sb.textContent = sfxMuted ? "SFX OFF" : "SFX ON";
+  mb.dataset.on = bgmMuted ? "0" : "1";
+  sb.dataset.on = sfxMuted ? "0" : "1";
+}
+document.getElementById("music-btn").addEventListener("click", ()=>{
+  bgmMuted = !bgmMuted;
+  if(!bgmMuted) ensureAudio();
+  applyMute(); refreshAudioButtons();
+});
+document.getElementById("sfx-btn").addEventListener("click", ()=>{
+  sfxMuted = !sfxMuted;
+  if(!sfxMuted) ensureAudio();
+  applyMute(); refreshAudioButtons();
+  if(!sfxMuted) tone(880,0.06,"square",0.1,1200); // confirmation blip
+});
+quitBtn.addEventListener("click", goTitle);
+document.getElementById("title-btn").addEventListener("click", goTitle);
+refreshAudioButtons();
+updateHud();
+demoInit(); bounceTitle();
+})();
+</script>
+</body>
+</html>
