@@ -143,6 +143,16 @@
     #dpad{ display:none; }
     #hint{ bottom:14px; }
   }
+  /* PC / tablet: keep the phone-shaped play area (aspect 440:700) centred instead of stretching the HUD across the whole window */
+  @media (min-width:600px){
+    html,body{ display:flex; align-items:center; justify-content:center; }
+    #wrap{ flex:none; width:min(440px, calc(100vh * 440 / 700)); height:auto; aspect-ratio:440 / 700; }
+    #title-screen .top h1{ font-size:20px; }
+    .by{ font-size:17px; }
+    #title-screen p.jp{ font-size:13px; }
+    #title-screen h1{ font-size:24px; }
+    #gameover-screen h1, #clear-screen h1, #end-screen h1{ font-size:26px; }
+  }
 </style>
 </head>
 <body>

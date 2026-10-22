@@ -141,6 +141,16 @@
     #touch-controls{ display:none; }
     #hint{ bottom:14px; }
   }
+  /* PC / tablet: keep the phone-shaped play area (aspect 480:640) centred instead of stretching the HUD across the whole window */
+  @media (min-width:600px){
+    html,body{ display:flex; align-items:center; justify-content:center; }
+    #wrap{ flex:none; width:min(480px, calc(100vh * 480 / 640)); height:auto; aspect-ratio:480 / 640; }
+    #title-screen .top h1{ font-size:20px; }
+    .by{ font-size:17px; }
+    #title-screen p.jp{ font-size:13px; }
+    #title-screen h1{ font-size:24px; }
+    #gameover-screen h1, #clear-screen h1, #end-screen h1{ font-size:26px; }
+  }
 </style>
 </head>
 <body>
@@ -184,6 +194,7 @@
     <h1 style="color:var(--neon-cyan); text-shadow:0 0 12px var(--neon-cyan);">WAVE <span id="clear-wave">1</span> CLEAR!</h1>
     <p id="clear-score">SCORE: 0</p>
     <button class="arcade" id="next-btn">NEXT WAVE ▶</button>
+    <p>ライフ全回復！<br>Lives fully restored!</p>
     <p>ボタンを押すと次のウェーブが始まります<br>Press the button to start the next wave</p>
   </div>
 
@@ -1155,6 +1166,7 @@ function showWaveClear(){
   stopBgm();
   keys.left = keys.right = keys.fire = false;
   ufo.active = false; pot.active = false; bullets = []; floaters = [];
+  state.lives = 3;   // clearing a wave restores all lives
   updateHud();
   document.getElementById("clear-wave").textContent = state.wave;
   document.getElementById("clear-score").textContent = "SCORE: " + state.score;
