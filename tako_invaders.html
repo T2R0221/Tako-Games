@@ -151,6 +151,9 @@
     #title-screen h1{ font-size:24px; }
     #gameover-screen h1, #clear-screen h1, #end-screen h1{ font-size:26px; }
   }
+  .homelink{ display:inline-block; font-family:inherit; font-size:12px; letter-spacing:1px; color:var(--neon-cyan); text-decoration:none;
+    border:1px solid var(--neon-cyan); border-radius:4px; padding:5px 10px; background:rgba(2,20,30,.7); pointer-events:auto; }
+  .homelink:active{ transform:scale(.96); }
 </style>
 </head>
 <body>
@@ -180,6 +183,7 @@
       <p class="en">Stop the octopus invasion!!<br>Take each one down with 4 shots!!<br>Beat the boss &amp; takotsubo for bonus!</p>
     </div>
     <button class="arcade" id="start-btn">START</button>
+    <a class="homelink" href="index.html">◀ ゲーム一覧 ALL GAMES</a>
     <p class="keys">← → / タッチで移動<br>SPACE / FIREで発射<br>Move: ← → / touch<br>Fire: SPACE / FIRE button</p>
     </div>
   </div>
