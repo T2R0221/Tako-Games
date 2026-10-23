@@ -62,6 +62,10 @@
     text-shadow:0 0 6px var(--amber); box-shadow:0 0 10px rgba(255,183,3,.4); }
   footer{ font-size:12.5px; opacity:.65; text-align:center; line-height:1.7; }
   @media (prefers-reduced-motion:reduce){ a.card{ transition:none; } }
+  .install{ width:min(92vw,560px); margin:6px auto 22px; padding:16px 18px; border:2px solid var(--amber); background:rgba(2,20,30,.7); text-align:left; box-sizing:border-box; }
+  .install h3{ margin:0 0 8px; font-size:16px; letter-spacing:1px; color:var(--amber); text-shadow:0 0 6px var(--amber); text-align:center; }
+  .install p{ margin:6px 0; font-size:14px; line-height:1.7; }
+  .install p.jp{ color:#d6fffa; } .install p.en{ color:#7fd8d0; font-size:14.5px; }
   .nw{white-space:nowrap}
 </style>
 <script>if('serviceWorker' in navigator&&location.protocol.startsWith('http')){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
@@ -96,6 +100,12 @@
     <span class="go">PLAY</span>
   </a>
 </main>
+
+<section class="install">
+  <h3>ホーム画面に追加してオフラインで遊ぶ<br><span style="font-size:14px">Add to Home Screen &amp; play offline</span></h3>
+  <p class="jp">iPhoneは Safari で開き、共有ボタン →「ホーム画面に追加」。アプリのように全画面で起動し、一度開けば電波がなくても遊べます。</p>
+  <p class="en">On iPhone, open in Safari, tap Share &rarr; "Add to Home Screen". It launches full-screen like an app and, once opened, plays without a connection.</p>
+</section>
 
 <footer>
   音は START / PLAY を押したあとに鳴ります。<br>
