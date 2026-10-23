@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TAKO GAMES">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#020617">
 <meta property="og:type" content="website">
 <meta property="og:title" content="TAKO TAKO GAMES by Studio T2R0 ©">
 <meta property="og:description" content="自作のタコキャラクターによるゲーム / Games starring my original octopus character">
@@ -57,6 +64,7 @@
   @media (prefers-reduced-motion:reduce){ a.card{ transition:none; } }
   .nw{white-space:nowrap}
 </style>
+<script>if('serviceWorker' in navigator&&location.protocol.startsWith('http')){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
 </head>
 <body>
 <header>

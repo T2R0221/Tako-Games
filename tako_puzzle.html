@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TAKO GAMES">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#020617">
 <title>TAKO TAKO PUZZLE</title>
 <style>
 :root{--tk:#d94a4a;--am:#e08a00;--bg:#ffffff;--ink:#1d2b3a}
@@ -71,6 +78,7 @@ body.opening #board{width:min(42vw,170px);min-width:0;margin:0 auto}
 body.opening h1.main,body.opening .by.main,body.opening .rule,body.opening #sizes,body.opening .info,body.opening #msg,body.opening .bar,body.opening .foot{visibility:hidden}
 @media (prefers-reduced-motion:reduce){#title h1 .ch,#title .by{animation:none;opacity:1}}
 </style>
+<script>if('serviceWorker' in navigator&&location.protocol.startsWith('http')){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
 </head>
 <body class="opening">
 <canvas id="bg"></canvas>
