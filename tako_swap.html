@@ -586,21 +586,24 @@ function newGame(){
   if(!demo&&mode==='1p'&&turn===1)cpuTurn();
 }
 function isHuman(t){return mode==='2p'||t===0}
+function errBeep(msg){tone(150,.18,"sawtooth",.1,100);if(msg)flash(msg)}   /* "can't move there" buzz */
 function tapNode(n){
-  if(over||busy||demo||!isHuman(turn))return;
+  if(over||demo)return;
+  if(busy||!isHuman(turn))return;        /* CPU is thinking: silently ignore */
   audioInit();
   var p=pieceAt(n),mySide=turn;
   if(p){
-    if(p.side!==mySide)return;
+    if(p.side!==mySide){errBeep('そのタコは動かせません / Not your octopus');return}
     if(sel===n){sel=-1;markSel();return}
+    if(!ADJ[n].some(function(j){return !pieceAt(j)})){sel=n;markSel();errBeep('このタコは動けません / This one is blocked');sel=-1;setTimeout(markSel,0);return}
     sel=n;beep(520,.04);markSel();return;
   }
-  /* empty node */
+  /* empty node: move the selected piece if it can reach it, otherwise the one piece of mine that can */
   if(sel>=0&&ADJ[sel].indexOf(n)>=0){doMove(sel,n);return}
-  if(sel<0){   /* shortcut: exactly one of my pieces can step here */
-    var c=ADJ[n].filter(function(j){var q=pieceAt(j);return q&&q.side===mySide});
-    if(c.length===1)doMove(c[0],n);
-  }
+  var c=ADJ[n].filter(function(j){var q=pieceAt(j);return q&&q.side===mySide});
+  if(c.length===1){doMove(c[0],n);return}
+  if(c.length===0){errBeep('そこへは動けません / Can\'t move there');return}
+  errBeep('先にタコをタップ / Tap an octopus first');
 }
 function doMove(from,to){
   var p=pieceAt(from),side=p.side;
