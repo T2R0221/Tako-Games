@@ -239,18 +239,20 @@ enemyImg.src = enemyImgs[4].src;
 let actx = null;
 let bgmMuted = false, sfxMuted = false;
 let bgmGain = null, sfxGain = null, silentEl = null;
+function initCtx(){   /* also called at page load, so the voices are already decoded when START is tapped */
+  if(actx) return;
+  actx = new (window.AudioContext || window.webkitAudioContext)();
+  bgmGain = actx.createGain();
+  bgmGain.gain.value = bgmMuted ? 0 : BGM_VOL;
+  bgmGain.connect(actx.destination);
+  sfxGain = actx.createGain();
+  sfxGain.gain.value = sfxMuted ? 0 : 1;
+  sfxGain.connect(actx.destination);
+  keepAlive();
+  loadSamples();
+}
 function ensureAudio(){
-  if(!actx){
-    actx = new (window.AudioContext || window.webkitAudioContext)();
-    bgmGain = actx.createGain();
-    bgmGain.gain.value = bgmMuted ? 0 : BGM_VOL;
-    bgmGain.connect(actx.destination);
-    sfxGain = actx.createGain();
-    sfxGain.gain.value = sfxMuted ? 0 : 1;
-    sfxGain.connect(actx.destination);
-    keepAlive();
-    loadSamples();
-  }
+  initCtx();
   if(actx.state === "suspended") actx.resume();
   // iPhone: the silent switch mutes Web Audio unless an HTML audio element is playing
   try{
@@ -402,6 +404,17 @@ function sfxKillVoice(){ // recorded "TA-KO TA-KO" (falls back to the synth voic
 }
 function sfxPlayerHit(){ noiseBurst(0.35,0.3); tone(160,0.35,"sawtooth",0.2,60); }
 function sfxGameOver(){ tone(300,0.9,"sawtooth",0.2,60); }
+/* start sound: wait until the context is running and the voice is decoded, then the same zap + "TA-KOOO-N" as every other game */
+function whenAudioReady(fn){
+  let n = 0;
+  (function chk(){
+    if(!actx) return;
+    if(actx.state !== "running"){ try{ actx.resume(); }catch(e){} }
+    if((actx.state === "running" && SMP.to) || n++ > 33){ fn(); return; }
+    setTimeout(chk, 30);
+  })();
+}
+
 function sfxWave(){ tone(660,0.12,"square",0.12,990); }
 function sfxUfoKillSynth(){ // zap + "TA-KOOO-N!"
   tone(1200,0.05,"square",0.18,1900);
@@ -952,7 +965,6 @@ function update(dt){
     if(state.clearT == null){
       state.clearT = 0.9;
       bullets = bullets.filter(b=>b.friendly);   // enemy shots vanish
-      sfxWave();
     }
     state.clearT -= dt;
     if(state.clearT <= 0){ showWaveClear(); return; }
@@ -1183,6 +1195,7 @@ function showWaveClear(){
   document.getElementById("clear-wave").textContent = state.wave;
   document.getElementById("clear-score").textContent = "SCORE: " + state.score;
   document.getElementById("clear-screen").style.display = "flex";
+  sfxUfoKill();   // clear = zap + TA-KOOO-N (same as the other games)
 }
 function nextWave(){
   ensureAudio();
@@ -1213,6 +1226,7 @@ function startGame(){
   state.running = true;
   startBgm();
   quitBtn.classList.remove("gone");
+  whenAudioReady(sfxUfoKill);   // start sound: zap + TA-KOOO-N (same as the other games)
 }
 
 document.getElementById("start-btn").addEventListener("click", startGame);
@@ -1258,6 +1272,7 @@ document.getElementById("sfx-btn").addEventListener("click", ()=>{
 quitBtn.addEventListener("click", goTitle);
 document.getElementById("title-btn").addEventListener("click", goTitle);
 refreshAudioButtons();
+try{ initCtx(); }catch(e){}
 demoInit(); bounceTitle();
 
 // tap canvas also fires (mobile-friendly single control)

@@ -314,6 +314,7 @@ function tap(r,c){
 }
 function gameOver(){
   done=true;clearInterval(tid);
+  setTimeout(function(){tone(300,0.9,'sawtooth',0.2,60)},250);   /* game-over sweep (same as the other games) after the wrong-answer buzz */
   setTimeout(function(){
     $('ctt').textContent='GAME OVER';$('ctt').className='over';$('ct').textContent='ハズレ3回 / 3 strikes';
     $('retry').style.display='';$('next').style.display='';
@@ -619,7 +620,7 @@ $('hint').onclick=hint;
 $('reset').onclick=function(){if(done)return;eraseArmed=!eraseArmed;updateEraseBtn();if(eraseArmed)flash('消したい白い✕をタップ / Tap a white ✕ to erase it',true);else clearMsg()};
 $('new').onclick=newPuzzle;$('next').onclick=newPuzzle;
 $('retry').onclick=function(){eraseArmed=false;updateEraseBtn();clearMsg();st=[];for(var r=0;r<N;r++)st.push(Array(N).fill(0));hints=2;done=false;miss=0;$('hl').textContent=hints;$('clear').style.display='none';$('board').className='';render();startTimer()};
-$('snd').onclick=function(){soundOn=!soundOn;sfxMuted=!soundOn;applyMute();this.textContent='♪ SOUND '+(soundOn?'ON':'OFF');this.classList.toggle('off',!soundOn);if(soundOn)audioInit()};
+$('snd').onclick=function(){soundOn=!soundOn;sfxMuted=!soundOn;applyMute();this.textContent='♪ SOUND '+(soundOn?'ON':'OFF');this.classList.toggle('off',!soundOn);if(soundOn){audioInit();tone(880,.06,'square',.1,1200)}};
 drawSea();
 /* ---- opening: bounce-in title + an auto-playing demo on the real board ---- */
 function bounceTitle(){

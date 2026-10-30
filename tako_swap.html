@@ -692,7 +692,7 @@ function goTitle(){
 }
 $('start').onclick=startGame;$('quit').onclick=goTitle;$('totitle').onclick=goTitle;
 $('retry').onclick=newGame;$('new').onclick=newGame;
-$('snd').onclick=function(){soundOn=!soundOn;sfxMuted=!soundOn;applyMute();this.textContent='♪ SOUND '+(soundOn?'ON':'OFF');this.classList.toggle('off',!soundOn);if(soundOn)audioInit()};
+$('snd').onclick=function(){soundOn=!soundOn;sfxMuted=!soundOn;applyMute();this.textContent='♪ SOUND '+(soundOn?'ON':'OFF');this.classList.toggle('off',!soundOn);if(soundOn){audioInit();tone(880,.06,'square',.1,1200)}};
 window.addEventListener('resize',function(){drawSea();fit()});window.addEventListener('orientationchange',function(){setTimeout(function(){drawSea();fit()},200)});
 document.addEventListener('touchmove',function(e){e.preventDefault()},{passive:false});
 var lastTE=0;
