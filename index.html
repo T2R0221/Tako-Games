@@ -47,8 +47,7 @@
   a.card:hover, a.card:focus-visible{ transform:translateY(-3px); box-shadow:0 0 26px rgba(38,255,230,.5); outline:none; }
   a.card:active{ transform:scale(.98); }
   a.card.puz{ border-color:#b794ff; box-shadow:0 0 16px rgba(183,148,255,.3); }
-  @media(min-width:960px){ .games{ grid-template-columns:repeat(3,minmax(0,1fr)); max-width:1100px; } a.card.puz{ grid-column:auto; justify-self:stretch; width:auto; } }
-  @media(min-width:621px) and (max-width:959px){ a.card.puz{ grid-column:1/-1; justify-self:center; width:calc(50% - 9px); box-sizing:border-box; } }
+  a.card.swp{ border-color:#ff9f5a; box-shadow:0 0 16px rgba(255,159,90,.3); }
   .pic .pix[src^="data:image/png"]{ }
   a.card.land{ border-color:#7fd8ff; box-shadow:0 0 16px rgba(127,216,255,.25); }
   .pic{ height:96px; display:flex; align-items:flex-end; gap:10px; }
@@ -64,7 +63,7 @@
   @media (prefers-reduced-motion:reduce){ a.card{ transition:none; } }
   .install{ width:min(92vw,560px); margin:6px auto 22px; padding:16px 18px; border:2px solid var(--amber); background:rgba(2,20,30,.7); text-align:left; box-sizing:border-box; }
   .install h3{ margin:0 0 8px; font-size:16px; letter-spacing:1px; color:var(--amber); text-shadow:0 0 6px var(--amber); text-align:center; }
-  .install p{ margin:6px 0; font-size:14px; line-height:1.7; }
+  .install p{ margin:6px 0; font-size:13.5px; line-height:1.7; text-align:center; white-space:nowrap; }
   .install p.jp{ color:#d6fffa; } .install p.en{ color:#7fd8d0; font-size:14.5px; }
   .nw{white-space:nowrap}
 </style>
@@ -99,12 +98,19 @@
     <p class="en">One per color, row &amp; column.<br>No touching. 3 strikes = out.</p>
     <span class="go">PLAY</span>
   </a>
+  <a class="card swp" href="tako_swap.html">
+    <div class="pic"><img class="pix" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAACICAYAAAAs9i/LAAACK0lEQVR4nO3dwUkeQRiAYX+REHLIyQosIFhLsB4P1iPWElKAFeSUQxAv2sEuZBhn/9fnuS648/Myh4+dXU8XB/fty9e31WvY8u/15bR6DVsuVy+AuQSOEzhO4DiB4wSOEzhu+Qy3N+c+3/38qKX8l5vHp83rq+dkOzhO4DiB4wSOEzhO4DiB46bPaOc+545aPSfbwXECxwkcJ3CcwHECxwkcNzyDffY5d9TsOdkOjhM4TuA4geMEjhM4TuC4q9ULGLU3R4469zneDo4TOE7gOIHjBI4TOE7guMPPwdf395vXnxff/8/Dw+QVjLGD4wSOEzhO4DiB4wSOEzju8HPw9x+3m9dnP69dff9RdnCcwHECxwkcJ3CcwHECxwkcJ3CcwHECxwkcJ3CcwHECxx3+efDf3782r88+l7z6/qPs4DiB4wSOEzhO4DiB4wSOy38veu87Wkdfn+9Fs0ngOIHjBI4TOE7gOIHjBI4TOE7gOIHjBI4TOE7gOIHjDn8uetTq572r2cFxAscJHCdwnMBxAscJHLd75vbo557rRs9N28FxAscJHCdwnMBxAscJHHdaPefOfn/33P/+6P3t4DiB4wSOEzhO4DiB4wSOm34uem9Oq1s9J9vBcQLHCRwncJzAcQLHCRw3PAePntvdex597vZ+/83j09Tn8XZwnMBxAscJHCdwnMBxAscNvx88+n99Ru+/Z/Ycvvr3ez/4kxM4TuA4geMEjhM4TuC4dwrjb2jn8RpyAAAAAElFTkSuQmCC"><img class="pix" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAACICAYAAAAs9i/LAAACPklEQVR4nO3csW0UURRAURYhWyIgogFcAM1AK44RMa3gZigAGiAisGQnpoP5El+fPz6+J53VzqyuXvA0M3t5dXJX12+fdl/DkceH+8vuazjyevcFZK0C4wqMKzCuwLgC4wqM277DjfbcT99+/q9L+Sd3tzeHx3fvyU0wrsC4AuMKjCswrsC4AuOW72jPfc+dtXtPboJxBcYVGFdgXIFxBcYVGDe9g730PXfW6j25CcYVGFdgXIFxBcYVGFdg3JvdFzBrtEfOeu57fBOMKzCuwLgC4wqMKzCuwLjT78FfPr8ffGLtnjo6/9fvv5eef1YTjCswrsC4AuMKjCswrsC40+/BHz+8Ozy++n7t7vPPaoJxBcYVGFdgXIFxBcYVGFdgXIFxBcYVGFdgXIFxBcYVGHf6+8E/fv05PL76ueTd55/VBOMKjCswrsC4AuMKjCsw7vR78OyeOfofrdFzzWffc0eaYFyBcQXGFRhXYFyBcQXGFRhXYFyBcQXGFRhXYFyBcQXGnf5+8Kyz/4/Vak0wrsC4AuMKjCswrsC4AuMuow9cXb99Ojr+0vfM1UbPdT8+3B82bIJxBcYVGFdgXIFxBcYVGHfZvefOvr+rf//s+ZtgXIFxBcYVGFdgXIFxBcYtfy56tKfpdu/JTTCuwLgC4wqMKzCuwLgC46b34Nnndkf3o5+70e+/u71Zej++CcYVGFdgXIFxBcYVGFdg3PT7waM9b9bsnrx6D9/9+3s/+IUrMK7AuALjCowrMK7AuL/rFWz+gh9gSQAAAABJRU5ErkJggg=="></div>
+    <h2>TAKO TAKO<br>SWAP</h2>
+    <p class="jp">赤と青のタコが入れ替わる陣取りゲーム！<br>相手のスタート列に3匹そろえたら勝ち！</p>
+    <p class="en">Swap sides with blue octopuses!<br>Line up all 3 on the far side.</p>
+    <span class="go">PLAY</span>
+  </a>
 </main>
 
 <section class="install">
   <h3>ホーム画面に追加してオフラインで遊ぶ<br><span style="font-size:14px">Add to Home Screen &amp; play offline</span></h3>
-  <p class="jp">iPhoneは Safari で開き、共有ボタン →「ホーム画面に追加」。アプリのように全画面で起動し、一度開けば電波がなくても遊べます。</p>
-  <p class="en">On iPhone, open in Safari, tap Share &rarr; "Add to Home Screen". It launches full-screen like an app and, once opened, plays without a connection.</p>
+  <p class="jp">Safariで開き、共有 →「ホーム画面に追加」<br>アプリのように全画面で起動します<br>一度開けば電波がなくても遊べます</p>
+  <p class="en">In Safari: Share → Add to Home Screen<br>Launches full-screen like an app.<br>Once opened, it works offline.</p>
 </section>
 
 <footer>
