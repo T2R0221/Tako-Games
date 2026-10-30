@@ -586,7 +586,7 @@ function newGame(){
   if(!demo&&mode==='1p'&&turn===1)cpuTurn();
 }
 function isHuman(t){return mode==='2p'||t===0}
-function errBeep(msg){tone(150,.18,"sawtooth",.1,100);if(msg)flash(msg)}   /* "can't move there" buzz */
+function errBeep(msg){beep(150,.2);if(msg)flash(msg)}   /* "can't move there" buzz = the same wrong-answer buzz as TAKO TAKO PUZZLE */
 function tapNode(n){
   if(over||demo)return;
   if(busy||!isHuman(turn))return;        /* CPU is thinking: silently ignore */
@@ -648,7 +648,7 @@ function finish(w){
   if(w<0){ttl='DRAW';cls='draw';txt='引き分け / '+CAP+' turns each';tone(300,.25,'square',.12,260)}
   else if(mode==='1p'){
     if(w===0){ttl='YOU WIN!';txt='赤タコがそろった！ / All 3 octopuses home!';clearVoice()}
-    else{ttl='GAME OVER';cls='over';txt='青（CPU）の勝ち / CPU wins';tone(160,.35,'sawtooth',.2,60)}
+    else{ttl='GAME OVER';cls='over';txt='青（CPU）の勝ち / CPU wins';tone(300,0.9,'sawtooth',0.2,60);playSmp('to',1,0.35)||0}   /* game-over sweep (same as INVADERS) + TA-KOOO-N */
   }else{ttl=(w?'BLUE':'RED')+' WINS!';txt=(w?'青':'赤')+'タコの勝ち！ / '+(w?'Blue':'Red')+' wins';clearVoice()}
   setTimeout(function(){document.body.classList.add('ended');$('ctt').textContent=ttl;$('ctt').className=cls;$('ct').textContent=txt;$('clear').style.display='flex'},w<0?500:900);
 }
