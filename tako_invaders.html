@@ -148,6 +148,8 @@
     body:not(.touch) #touch-controls{ display:none; }
     body:not(.touch) #hint{ bottom:14px; }
   }
+  /* tablet-size touch screens: the pad buttons are self-explanatory, and the hint would overlap the play area */
+  @media (min-width:600px){ body.touch:not(.kbd) #hint{ display:none; } }
   /* keyboard detected (iPad + keyboard / PC): hide the on-screen pad */
   body.kbd #touch-controls{ display:none; }
   body.kbd #hint{ bottom:14px; }
