@@ -145,9 +145,12 @@
     color:#7fd; font-size:12.5px; opacity:0.8; z-index:3; pointer-events:none;
   }
   @media (min-width:900px){
-    #touch-controls{ display:none; }
-    #hint{ bottom:14px; }
+    body:not(.touch) #touch-controls{ display:none; }
+    body:not(.touch) #hint{ bottom:14px; }
   }
+  /* keyboard detected (iPad + keyboard / PC): hide the on-screen pad */
+  body.kbd #touch-controls{ display:none; }
+  body.kbd #hint{ bottom:14px; }
   /* PC / tablet: keep the phone-shaped play area (aspect 480:640) centred instead of stretching the HUD across the whole window */
   @media (min-width:600px){
     html,body{ display:flex; align-items:center; justify-content:center; }
@@ -673,6 +676,14 @@ function makeFormation(wave){
   state.enemyFireCooldown = Math.max(0.35, 1.1 - (wave-1)*0.12);
 }
 
+
+/* ---------- input mode: touch pad <-> keyboard (auto) ---------- */
+(function(){
+  const b=document.body;
+  if(('ontouchstart' in window)||navigator.maxTouchPoints>0) b.classList.add('touch');
+  window.addEventListener('keydown',e=>{ if(e.isTrusted && !e.metaKey) b.classList.add('kbd'); });
+  window.addEventListener('touchstart',()=>{ b.classList.remove('kbd'); },{passive:true,capture:true});
+})();
 /* ---------- input ---------- */
 const keys = { left:false, right:false, fire:false };
 window.addEventListener("keydown", e=>{

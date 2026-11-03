@@ -147,9 +147,14 @@
     #wrap{ padding-bottom:84px; box-sizing:border-box; }
   }
   @media (min-width:900px){
-    #dpad{ display:none; }
-    #hint{ bottom:14px; }
+    body:not(.touch) #dpad{ display:none; }
+    body:not(.touch) #hint{ bottom:14px; }
   }
+  body.touch:not(.kbd) #wrap{ padding-bottom:84px; box-sizing:border-box; }
+  /* keyboard detected (iPad + keyboard / PC): hide the on-screen pad */
+  body.kbd #dpad{ display:none; }
+  body.kbd #hint{ bottom:14px; }
+  body.kbd #wrap{ padding-bottom:0; }
   /* PC / tablet: keep the phone-shaped play area (aspect 440:700) centred instead of stretching the HUD across the whole window */
   @media (min-width:600px){
     html,body{ display:flex; align-items:center; justify-content:center; }
@@ -492,6 +497,14 @@ function makeFish(y, dir, typeIdx, extraSpeed){
   });
 }
 
+
+/* ---------- input mode: touch pad <-> keyboard (auto) ---------- */
+(function(){
+  const b=document.body;
+  if(('ontouchstart' in window)||navigator.maxTouchPoints>0) b.classList.add('touch');
+  window.addEventListener('keydown',e=>{ if(e.isTrusted && !e.metaKey) b.classList.add('kbd'); });
+  window.addEventListener('touchstart',()=>{ b.classList.remove('kbd'); },{passive:true,capture:true});
+})();
 /* ---------- input ---------- */
 function upPress(){ if(!keys.up){ keys.up = true; if(state.running) playSmp("up", 1); } }
 function upRelease(){ keys.up = false; }
