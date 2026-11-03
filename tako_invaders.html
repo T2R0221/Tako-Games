@@ -900,8 +900,28 @@ function update(dt){
   }
 
   // bullets
-  for(const b of bullets){ b.y += b.vy*dt; }
+  for(const b of bullets){ b.py = b.y; b.y += b.vy*dt; }
   bullets = bullets.filter(b=> b.y>-30 && b.y<BH+30);
+
+  // our shot meets an enemy shot on the same line: both vanish (swept check so fast shots can't pass through)
+  {
+    const mine = bullets.filter(b=>b.friendly), theirs = bullets.filter(b=>!b.friendly);
+    for(const a of mine){
+      for(const e of theirs){
+        if(e.dead || a.dead) continue;
+        if(a.x < e.x+e.w && a.x+a.w > e.x){
+          const aTop = a.y, aBot = (a.py!=null?a.py:a.y)+a.h;      // friendly moves up
+          const eTop = (e.py!=null?e.py:e.y), eBot = e.y+e.h;      // enemy moves down
+          if(aTop < eBot && aBot > eTop){
+            a.dead = e.dead = true;
+            addFloater((a.x+e.x)/2+3, (a.y+e.y)/2, "*", "#ffffff");
+            tone(1400,0.06,"square",0.07,500);
+          }
+        }
+      }
+    }
+    bullets = bullets.filter(b=>!b.dead);
+  }
 
   // friendly bullets vs the bonus pot: repairs the cannon (+1 life), or +500 when already at full health
   if(pot.active){
