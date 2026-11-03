@@ -151,6 +151,10 @@
     body:not(.touch) #hint{ bottom:14px; }
   }
   body.touch:not(.kbd) #wrap{ padding-bottom:84px; box-sizing:border-box; }
+  /* on-screen hint only when the pad is hidden (keyboard in use / large non-touch screen) */
+  #hint{ display:none; }
+  body.kbd #hint{ display:block; }
+  @media (min-width:900px){ body:not(.touch) #hint{ display:block; } }
   /* keyboard detected (iPad + keyboard / PC): hide the on-screen pad */
   body.kbd #dpad{ display:none; }
   body.kbd #hint{ bottom:14px; }
