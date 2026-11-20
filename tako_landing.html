@@ -239,10 +239,10 @@ function initCtx(){   /* also called at page load, so the voices are already dec
   actx = new (window.AudioContext || window.webkitAudioContext)();
   bgmGain = actx.createGain();
   bgmGain.gain.value = bgmMuted ? 0 : BGM_VOL;
-  bgmGain.connect(actx.destination);
+  bgmGain.connect(outNode());
   sfxGain = actx.createGain();
   sfxGain.gain.value = sfxMuted ? 0 : 1;
-  sfxGain.connect(actx.destination);
+  sfxGain.connect(outNode());
   keepAlive();
   loadSamples();
 }
@@ -284,11 +284,23 @@ function loadSamples(){
     }catch(e){}
   });
 }
+/* master limiter: keeps voices + BGM + effects from clipping (sound cracking) when they overlap */
+var VOICE_GAIN = 0.6;   // recorded voices (TAKO TAKO / TAKOOON / TAKOTSUBOO) were mastered hot
+var limiterNode;
+function outNode(){
+  if(!limiterNode){
+    limiterNode = actx.createDynamicsCompressor();
+    limiterNode.threshold.value = -6; limiterNode.knee.value = 4; limiterNode.ratio.value = 20;
+    limiterNode.attack.value = 0.002; limiterNode.release.value = 0.12;
+    limiterNode.connect(actx.destination);
+  }
+  return limiterNode;
+}
 function playSmp(k, vol){
   if(sfxMuted || !actx || !SMP[k]) return;
   try{ if(smpCur) smpCur.stop(); }catch(e){}   // restart cleanly on every press
   const s = actx.createBufferSource(); s.buffer = SMP[k];
-  const g = actx.createGain(); g.gain.value = vol;
+  const g = actx.createGain(); g.gain.value = vol*VOICE_GAIN;
   s.connect(g); g.connect(sfxGain); s.start(actx.currentTime + 0.03);
   smpCur = s;
 }
