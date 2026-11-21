@@ -1094,7 +1094,7 @@ function onPlayerHit(){
   updateHud();
 }
 
-/* HUD lives = cannons. The one in use (leftmost) shows its damage the same way as the cannon on screen */
+/* HUD lives = cannons. The one in use (rightmost remaining) shows its damage the same way as the cannon on screen */
 const lifeIcoCache = {};
 function lifeIcon(dmg, lost){
   const key = lost ? "lost" : dmg;
@@ -1114,7 +1114,9 @@ function lifeIcon(dmg, lost){
 function updateHud(){
   document.getElementById("score").textContent = String(state.score).padStart(4,"0");
   let h = "";
-  for(let i=0;i<3;i++) h += i < state.lives ? lifeIcon(i===0 ? state.damage : 0, false) : lifeIcon(0, true);
+  // icons stay in place: the cannon in use is the rightmost remaining one, it changes colour/shape where it is
+  // and turns grey in the same spot when destroyed; the next one to the left takes over
+  for(let i=0;i<3;i++) h += i < state.lives ? lifeIcon(i===state.lives-1 ? state.damage : 0, false) : lifeIcon(0, true);
   const el = document.getElementById("lives");
   if(el._h !== h){ el._h = h; el.innerHTML = h; }   // updateHud runs every frame: only touch the DOM when it changes
 }
