@@ -56,8 +56,8 @@
     pointer-events:none;
   }
   #hud .lives span{ color:var(--neon-pink); text-shadow:0 0 6px var(--neon-pink); }
-  #hud .lives svg{ width:12px; height:18px; margin-left:4px; vertical-align:-3px; filter:drop-shadow(0 0 3px var(--tako-red)); }
-  #hud .lives svg.lost{ opacity:.25; filter:none; }
+  #hud .lives img{ width:27px; height:15px; margin-left:4px; vertical-align:-2px; image-rendering:pixelated; }
+  #hud .lives img.lost{ opacity:.25; }
   #title-screen, #gameover-screen, #clear-screen{
     position:absolute; inset:0; display:flex; flex-direction:column;
     align-items:center; justify-content:center; text-align:center;
@@ -179,7 +179,7 @@
   <div id="scanlines"></div>
   <div id="hud">
     <div>SCORE <span id="score">0000</span></div>
-    <div class="lives">LIVES <span id="lives"><svg viewBox="0 0 12 18"><path fill="#e8585a" d="M6 0C2.6 0 .8 2.6.8 6.2c0 2.4.6 4.4.2 6.6L.6 16.4c-.1.9.9 1.1 1.3.4L2.6 15l.6 2.2c.2.7 1.2.7 1.4 0L5 15l1 2.6c.2.5.8.5 1 0L7 15l.4 2.2c.2.7 1.2.7 1.4 0L9.4 15l.7 2.2c.4.7 1.4.5 1.3-.4L11 12.8c-.4-2.2.2-4.2.2-6.6C11.2 2.6 9.4 0 6 0z"/><circle cx="4" cy="7" r="1.1" fill="#fff"/><circle cx="8" cy="7" r="1.1" fill="#fff"/><circle cx="4" cy="7.2" r=".55" fill="#2e140e"/><circle cx="8" cy="7.2" r=".55" fill="#2e140e"/></svg><svg viewBox="0 0 12 18"><path fill="#e8585a" d="M6 0C2.6 0 .8 2.6.8 6.2c0 2.4.6 4.4.2 6.6L.6 16.4c-.1.9.9 1.1 1.3.4L2.6 15l.6 2.2c.2.7 1.2.7 1.4 0L5 15l1 2.6c.2.5.8.5 1 0L7 15l.4 2.2c.2.7 1.2.7 1.4 0L9.4 15l.7 2.2c.4.7 1.4.5 1.3-.4L11 12.8c-.4-2.2.2-4.2.2-6.6C11.2 2.6 9.4 0 6 0z"/><circle cx="4" cy="7" r="1.1" fill="#fff"/><circle cx="8" cy="7" r="1.1" fill="#fff"/><circle cx="4" cy="7.2" r=".55" fill="#2e140e"/><circle cx="8" cy="7.2" r=".55" fill="#2e140e"/></svg><svg viewBox="0 0 12 18"><path fill="#e8585a" d="M6 0C2.6 0 .8 2.6.8 6.2c0 2.4.6 4.4.2 6.6L.6 16.4c-.1.9.9 1.1 1.3.4L2.6 15l.6 2.2c.2.7 1.2.7 1.4 0L5 15l1 2.6c.2.5.8.5 1 0L7 15l.4 2.2c.2.7 1.2.7 1.4 0L9.4 15l.7 2.2c.4.7 1.4.5 1.3-.4L11 12.8c-.4-2.2.2-4.2.2-6.6C11.2 2.6 9.4 0 6 0z"/><circle cx="4" cy="7" r="1.1" fill="#fff"/><circle cx="8" cy="7" r="1.1" fill="#fff"/><circle cx="4" cy="7.2" r=".55" fill="#2e140e"/><circle cx="8" cy="7.2" r=".55" fill="#2e140e"/></svg></span></div>
+    <div class="lives">LIVES <span id="lives"></span></div>
     <div>WAVE <span id="wave">1</span></div>
   </div>
 
@@ -1094,11 +1094,29 @@ function onPlayerHit(){
   updateHud();
 }
 
-const LIFE_ICO = '<svg viewBox="0 0 12 18"><path fill="#e8585a" d="M6 0C2.6 0 .8 2.6.8 6.2c0 2.4.6 4.4.2 6.6L.6 16.4c-.1.9.9 1.1 1.3.4L2.6 15l.6 2.2c.2.7 1.2.7 1.4 0L5 15l1 2.6c.2.5.8.5 1 0L7 15l.4 2.2c.2.7 1.2.7 1.4 0L9.4 15l.7 2.2c.4.7 1.4.5 1.3-.4L11 12.8c-.4-2.2.2-4.2.2-6.6C11.2 2.6 9.4 0 6 0z"/><circle cx="4" cy="7" r="1.1" fill="#fff"/><circle cx="8" cy="7" r="1.1" fill="#fff"/><circle cx="4" cy="7.2" r=".55" fill="#2e140e"/><circle cx="8" cy="7.2" r=".55" fill="#2e140e"/></svg>';
-const LIFE_LOST = LIFE_ICO.replace('<svg ','<svg class="lost" ');
+/* HUD lives = cannons. The one in use (leftmost) shows its damage the same way as the cannon on screen */
+const lifeIcoCache = {};
+function lifeIcon(dmg, lost){
+  const key = lost ? "lost" : dmg;
+  if(lifeIcoCache[key]) return lifeIcoCache[key];
+  const C = 3, W = SHIP_ROWS[0].length, H = SHIP_ROWS.length;
+  const cv = document.createElement("canvas"); cv.width = W*C; cv.height = H*C;
+  const g = cv.getContext("2d");
+  const d = lost ? 0 : dmg;
+  const gone = new Set(), burn = new Set();
+  for(let i=0;i<d;i++){ SHIP_CHIP[i].forEach(c=>gone.add(c[0]+","+c[1])); SHIP_BURN[i].forEach(c=>burn.add(c[0]+","+c[1])); }
+  const tone = lost ? {b:"#7f93a8", n:"#c0ccd8"} : SHIP_TONE[d];
+  SHIP_ROWS.forEach((row,j)=>{ for(let i=0;i<W;i++){ const ch=row[i]; if(ch==="."||gone.has(i+","+j)) continue;
+    g.fillStyle = burn.has(i+","+j) ? "#3a1a10" : (ch==="N" ? tone.n : (ch==="C" ? "#0b2a30" : tone.b)); g.fillRect(i*C, j*C, C, C); } });
+  const glow = lost ? "" : ` style="filter:drop-shadow(0 0 3px ${SHIP_TONE[d].glow})"`;
+  return lifeIcoCache[key] = `<img${lost?' class="lost"':''}${glow} src="${cv.toDataURL()}" alt="">`;
+}
 function updateHud(){
   document.getElementById("score").textContent = String(state.score).padStart(4,"0");
-  document.getElementById("lives").innerHTML = LIFE_ICO.repeat(Math.max(state.lives,0)) + LIFE_LOST.repeat(Math.max(3-state.lives,0));
+  let h = "";
+  for(let i=0;i<3;i++) h += i < state.lives ? lifeIcon(i===0 ? state.damage : 0, false) : lifeIcon(0, true);
+  const el = document.getElementById("lives");
+  if(el._h !== h){ el._h = h; el.innerHTML = h; }   // updateHud runs every frame: only touch the DOM when it changes
 }
 
 /* ---------- draw ---------- */
