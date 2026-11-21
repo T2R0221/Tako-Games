@@ -133,6 +133,7 @@
   }
   #touch-controls .side{ display:flex; gap:10px; }
   .tbtn{
+    -webkit-touch-callout:none;
     width:58px; height:58px; border-radius:50%;
     border:2px solid var(--neon-cyan); color:var(--neon-cyan);
     background:rgba(2,20,30,0.55); font-size:22px;
@@ -734,8 +735,8 @@ function makeFormation(wave){
 /* ---------- input ---------- */
 const keys = { left:false, right:false, fire:false };
 window.addEventListener("keydown", e=>{
-  if(e.code==="ArrowLeft") keys.left = true;
-  if(e.code==="ArrowRight") keys.right = true;
+  if(e.code==="ArrowLeft"){ keys.left = true; if(!e.repeat) lastDir = -1; }
+  if(e.code==="ArrowRight"){ keys.right = true; if(!e.repeat) lastDir = 1; }
   if(e.code==="Space"){ keys.fire = true; e.preventDefault(); }
 });
 window.addEventListener("keyup", e=>{
@@ -744,15 +745,23 @@ window.addEventListener("keyup", e=>{
   if(e.code==="Space") keys.fire = false;
 });
 
+/* steering: when both directions are held (a stuck button, or rolling from one key to the other)
+   the one pressed last wins, so the cannon never freezes against the edge */
+let lastDir = 0;
+function clearKeys(){ keys.left = keys.right = keys.fire = false; }
+window.addEventListener("blur", clearKeys);
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) clearKeys(); });
 function bindHold(el, onDown, onUp){
   el.addEventListener("touchstart", e=>{ e.preventDefault(); onDown(); }, {passive:false});
-  el.addEventListener("touchend", e=>{ e.preventDefault(); onUp(); }, {passive:false});
+  const up = e=>{ e.preventDefault(); if(e.targetTouches.length===0) onUp(); };
+  el.addEventListener("touchend", up, {passive:false});
+  el.addEventListener("touchcancel", up, {passive:false});   // iOS cancels long holds: release the button too
   el.addEventListener("mousedown", e=>{ e.preventDefault(); onDown(); });
   el.addEventListener("mouseup", e=>{ e.preventDefault(); onUp(); });
   el.addEventListener("mouseleave", ()=> onUp());
 }
-bindHold(document.getElementById("btn-left"), ()=>keys.left=true, ()=>keys.left=false);
-bindHold(document.getElementById("btn-right"), ()=>keys.right=true, ()=>keys.right=false);
+bindHold(document.getElementById("btn-left"), ()=>{ keys.left=true; lastDir=-1; }, ()=>keys.left=false);
+bindHold(document.getElementById("btn-right"), ()=>{ keys.right=true; lastDir=1; }, ()=>keys.right=false);
 bindHold(document.getElementById("btn-fire"), ()=>keys.fire=true, ()=>keys.fire=false);
 
 /* ---------- helpers ---------- */
@@ -895,8 +904,8 @@ function update(dt){
   updatePot(dt);
 
   // player movement
-  if(keys.left) player.x -= PLAYER_SPEED*dt;
-  if(keys.right) player.x += PLAYER_SPEED*dt;
+  const mv = (keys.left && keys.right) ? lastDir : keys.left ? -1 : keys.right ? 1 : 0;
+  player.x += mv*PLAYER_SPEED*dt;
   player.x = Math.max(6, Math.min(BW-PLAYER_W-6, player.x));
 
   // firing
@@ -1365,6 +1374,7 @@ demoInit(); bounceTitle();
 // tap canvas also fires (mobile-friendly single control)
 canvas.addEventListener("touchstart", ()=>{ keys.fire = true; }, {passive:true});
 canvas.addEventListener("touchend", ()=>{ keys.fire = false; }, {passive:true});
+canvas.addEventListener("touchcancel", ()=>{ keys.fire = false; }, {passive:true});
 
 updateHud();
 })();
