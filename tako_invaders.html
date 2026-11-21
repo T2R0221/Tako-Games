@@ -215,7 +215,7 @@
     <h1 style="color:var(--neon-cyan); text-shadow:0 0 12px var(--neon-cyan);">WAVE <span id="clear-wave">1</span> CLEAR!</h1>
     <p id="clear-score">SCORE: 0</p>
     <button class="arcade" id="next-btn">NEXT WAVE ▶</button>
-    <p>ライフ全回復！<br>Lives fully restored!</p>
+    <p>砲台修復！<br>Cannon repaired!</p>
     <p>ボタンを押すと次のウェーブが始まります<br>Press the button to start the next wave</p>
   </div>
 
@@ -585,6 +585,7 @@ let state = {
   running:false,
   score:0,
   lives:3,
+  damage:0,   // hits on the current cannon (0-2); the 3rd hit destroys it and costs one life (3 lives x 3 hits = 9 hits)
   wave:1,
   formationDir:1,
   formationSpeed:34, // px/s baseline, scales with wave
@@ -891,6 +892,10 @@ function bounceTitle(){
 
 /* ---------- update ---------- */
 function update(dt){
+  if(!player.alive && state.running && state.lives>0){
+    player.respawnT -= dt;
+    if(player.respawnT<=0){ player.alive = true; player.x = BW/2-PLAYER_W/2; player.blinkT = 2.0; }
+  }
   // stars
   for(const s of stars){ s.y += s.s*dt; if(s.y>BH){ s.y=0; s.x=Math.random()*BW; } }
 
@@ -983,7 +988,7 @@ function update(dt){
     bullets = bullets.filter(b=>!b.dead);
   }
 
-  // friendly bullets vs the bonus pot: repairs the cannon (+1 life), or +500 when already at full health
+  // friendly bullets vs the bonus pot: repairs the damaged cannon (lives unchanged), or +500 when it is undamaged
   if(pot.active){
     for(const b of bullets){
       if(!b.friendly) continue;
@@ -991,7 +996,7 @@ function update(dt){
         b.y = -9999;
         pot.active = false; potTimer = rand(14,24);
         const px = pot.x+pot.w/2, py = pot.y+pot.h/2;
-        if(state.lives<3){ state.lives++; addFloater(px,py,"REPAIR! LIFE +1","#5ef2e0"); }
+        if(state.damage>0){ state.damage = 0; addFloater(px,py,"REPAIR!","#5ef2e0"); }
         else { state.score += 500; addFloater(px,py,"BONUS +500","#c48bff"); }
         addFloater(px,py+16,"TAKOTSUBO!","#ffb703");
         updateHud(); sfxPotGet();
@@ -1069,16 +1074,24 @@ function update(dt){
   updateHud();
 }
 
+const CANNON_HITS = 3;
 function onPlayerHit(){
-  if(player.blinkT>0) return; // brief invulnerability
-  state.lives -= 1;
+  if(player.blinkT>0 || !player.alive) return; // brief invulnerability
+  state.damage += 1;
   sfxPlayerHit();
   spawnDebris(player.x+player.w/2, player.y+10, 12, "#5ef2e0");
   player.blinkT = 1.4;
-  updateHud();
-  if(state.lives<=0){
-    triggerGameOver();
+  if(state.damage >= CANNON_HITS){
+    // cannon destroyed: one life is lost, a fresh (undamaged) cannon comes back shortly
+    state.lives -= 1;
+    state.damage = 0;
+    spawnDebris(player.x+player.w/2, player.y+10, 18, "#ffffff");
+    spawnDebris(player.x+player.w/2, player.y+10, 18, "#ff9a3c");
+    noiseBurst(0.5,0.35);
+    player.alive = false; player.respawnT = 1.2; player.blinkT = 0;
+    if(state.lives<=0){ updateHud(); triggerGameOver(); return; }
   }
+  updateHud();
 }
 
 const LIFE_ICO = '<svg viewBox="0 0 12 18"><path fill="#e8585a" d="M6 0C2.6 0 .8 2.6.8 6.2c0 2.4.6 4.4.2 6.6L.6 16.4c-.1.9.9 1.1 1.3.4L2.6 15l.6 2.2c.2.7 1.2.7 1.4 0L5 15l1 2.6c.2.5.8.5 1 0L7 15l.4 2.2c.2.7 1.2.7 1.4 0L9.4 15l.7 2.2c.4.7 1.4.5 1.3-.4L11 12.8c-.4-2.2.2-4.2.2-6.6C11.2 2.6 9.4 0 6 0z"/><circle cx="4" cy="7" r="1.1" fill="#fff"/><circle cx="8" cy="7" r="1.1" fill="#fff"/><circle cx="4" cy="7.2" r=".55" fill="#2e140e"/><circle cx="8" cy="7.2" r=".55" fill="#2e140e"/></svg>';
@@ -1156,7 +1169,7 @@ function drawDebris(){
 function drawPlayer(){
   if(!player.alive) return;
   if(player.blinkT>0){ player.blinkT -= 1/60; if(Math.floor(player.blinkT*10)%2===0) return; }
-  drawShipPx(player.x+player.w/2, player.y, 3-state.lives, performance.now()/1000);
+  drawShipPx(player.x+player.w/2, player.y, state.damage, performance.now()/1000);
 }
 
 let bossCv = null;
@@ -1286,7 +1299,7 @@ function showWaveClear(){
   stopBgm();
   keys.left = keys.right = keys.fire = false;
   ufo.active = false; pot.active = false; bullets = []; floaters = [];
-  state.lives = 3;   // clearing a wave restores all lives
+  state.damage = 0;   // clearing a wave repairs the cannon; lives stay as they are
   updateHud();
   document.getElementById("clear-wave").textContent = state.wave;
   document.getElementById("clear-score").textContent = "SCORE: " + state.score;
@@ -1298,6 +1311,7 @@ function nextWave(){
   document.getElementById("clear-screen").style.display = "none";
   state.wave += 1;
   document.getElementById("wave").textContent = state.wave;
+  if(!player.alive){ player.alive = true; player.x = BW/2-PLAYER_W/2; player.blinkT = 0; }
   makeFormation(state.wave);
   bullets = []; floaters = [];
   ufo.active = false; ufoTimer = rand(7,13); pot.active = false; potTimer = rand(12,20);
@@ -1308,7 +1322,7 @@ function nextWave(){
 function startGame(){
   ensureAudio();
   titleMode = false; debris = [];
-  state.score = 0; state.lives = 3; state.wave = 1;
+  state.score = 0; state.lives = 3; state.damage = 0; state.wave = 1;
   player = { x: BW/2-PLAYER_W/2, y: BH-120, w:PLAYER_W, h:PLAYER_H, alive:true, blinkT:0 };
   bullets = []; floaters = [];
   ufo.active = false; ufoTimer = rand(7,13); pot.active = false; potTimer = rand(12,20);
@@ -1332,7 +1346,7 @@ function goTitle(){
   state.running = false;
   stopBgm();
   keys.left = keys.right = keys.fire = false;
-  state.score = 0; state.lives = 3; state.wave = 1;
+  state.score = 0; state.lives = 3; state.damage = 0; state.wave = 1;
   player = { x: BW/2-PLAYER_W/2, y: BH-120, w:PLAYER_W, h:PLAYER_H, alive:true, blinkT:0 };
   bullets = []; floaters = []; enemies = [];
   ufo.active = false; ufoTimer = rand(7,13); pot.active = false; potTimer = rand(12,20);
