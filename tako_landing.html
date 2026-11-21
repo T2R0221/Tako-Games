@@ -130,7 +130,7 @@
     position:absolute; bottom:10px; left:0; right:0;
     display:flex; justify-content:center; gap:10px; z-index:4;
   }
-  .dbtn{
+  .dbtn{ -webkit-touch-callout:none;
     width:58px; height:58px;
     border:2px solid var(--neon-cyan); color:var(--neon-cyan);
     background:rgba(2,20,30,0.55); font-size:20px; border-radius:10px;
@@ -526,8 +526,8 @@ function upPress(){ if(!keys.up){ keys.up = true; if(state.running) playSmp("up"
 function upRelease(){ keys.up = false; }
 const keys = { up:false, left:false, right:false };
 window.addEventListener("keydown", e=>{
-  if(e.code==="ArrowLeft") keys.left=true;
-  if(e.code==="ArrowRight") keys.right=true;
+  if(e.code==="ArrowLeft"){ keys.left=true; if(!e.repeat) lastDir=-1; }
+  if(e.code==="ArrowRight"){ keys.right=true; if(!e.repeat) lastDir=1; }
   if(e.code==="ArrowUp") upPress();
   if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.code)) e.preventDefault();
 });
@@ -536,15 +536,23 @@ window.addEventListener("keyup", e=>{
   if(e.code==="ArrowRight") keys.right=false;
   if(e.code==="ArrowUp") upRelease();
 });
+/* steering: when both directions are held (a stuck button, or rolling from one key to the other)
+   the one pressed last wins, so the octopus never freezes against the edge */
+let lastDir = 0;
+function clearKeys(){ keys.up = keys.left = keys.right = false; }
+window.addEventListener("blur", clearKeys);
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) clearKeys(); });
 function bindHold(el, onDown, onUp){
   el.addEventListener("touchstart", e=>{ e.preventDefault(); onDown(); }, {passive:false});
-  el.addEventListener("touchend", e=>{ e.preventDefault(); onUp(); }, {passive:false});
+  const up = e=>{ e.preventDefault(); if(e.targetTouches.length===0) onUp(); };
+  el.addEventListener("touchend", up, {passive:false});
+  el.addEventListener("touchcancel", up, {passive:false});   // iOS cancels long holds: release the button too
   el.addEventListener("mousedown", e=>{ e.preventDefault(); onDown(); });
   el.addEventListener("mouseup", e=>{ e.preventDefault(); onUp(); });
   el.addEventListener("mouseleave", ()=> onUp());
 }
-bindHold(document.getElementById("btn-left"), ()=>keys.left=true, ()=>keys.left=false);
-bindHold(document.getElementById("btn-right"), ()=>keys.right=true, ()=>keys.right=false);
+bindHold(document.getElementById("btn-left"), ()=>{ keys.left=true; lastDir=-1; }, ()=>keys.left=false);
+bindHold(document.getElementById("btn-right"), ()=>{ keys.right=true; lastDir=1; }, ()=>keys.right=false);
 bindHold(document.getElementById("btn-up"), upPress, upRelease);
 
 /* ---------- helpers ---------- */
@@ -584,8 +592,7 @@ function update(dt){
   let vy = FALL_SPEED;
   if(keys.up) vy -= MOVE_SPEED;
   let vx = 0;
-  if(keys.left) vx -= MOVE_SPEED;
-  if(keys.right) vx += MOVE_SPEED;
+  vx = ((keys.left && keys.right) ? lastDir : keys.left ? -1 : keys.right ? 1 : 0) * MOVE_SPEED;
 
   player.x += vx*dt;
   player.y += vy*dt;
