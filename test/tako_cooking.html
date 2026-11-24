@@ -123,8 +123,8 @@
       <div style="font-size:12px;letter-spacing:2px;color:#ff2e88;border:1px solid #ff2e88;border-radius:6px;padding:2px 8px;">テスト版 TEST VERSION</div>
     </div>
     <div class="right">
-      <p class="jp">タコさんウインナーをワンオペで作ってお客さんをさばこう！<br>冷蔵庫 → まな板 → フライヤー → カウンター<br>足と目、口を作ったら 揚げるよ でも 揚げ過ぎはNG！<br>お客さんがつまみなしで飲み潰れたら３人で閉店！<br>時間内に在庫を使い切ればコンプリート！</p>
-      <p class="en">Run the shop solo and serve your customers!<br>Fridge → board → fryer → counter<br>Make the legs, eyes and mouth, then fry  but don't over-fry!<br>3 customers drunk with no snacks close the shop!<br>Use up the stock in time for a COMPLETE!</p>
+      <p class="jp">タコさんウインナーを作ってお客さんに出そう！<br>冷蔵庫 → まな板 → フライヤー → カウンター<br>足と目、口を作ったら 揚げるよ でも 揚げ過ぎはNG！<br>お客さんがつまみなしで飲み潰れたら３人で閉店！<br>時間内に在庫を使い切ればコンプリート！</p>
+      <p class="en">Make octopus wieners for your customers!<br>Fridge → board → fryer → counter<br>Make the legs, eyes and mouth, then fry  but don't over-fry!<br>3 customers drunk with no snacks close the shop!<br>Use up the stock in time for a COMPLETE!</p>
       <div class="btnrow">
         <button class="arcade" id="start-easy">START 見習い<small>一部の作業が自動 EASY</small></button>
         <button class="arcade" id="start-pro">START 職人<small>全部手作業 PRO</small></button>
@@ -892,7 +892,7 @@ function endGame(why){
     time:"閉店時間です  Closing time",
     box:"廃棄BOXがあふれて閉店  The box overflowed",
     drunk:"酔いつぶれ" + DRUNK_MAX + "人で閉店  Too many drunk customers"}[why];
-  document.getElementById("final-score").textContent = "さばいたお客さん SERVED: " + state.served;
+  document.getElementById("final-score").textContent = "満足したお客さん " + state.served + "人  HAPPY CUSTOMERS: " + state.served;
   document.getElementById("final-detail").innerHTML = "酔いつぶれ " + state.drunk + "人 / 廃棄 " + box.n + "個<br>Drunk " + state.drunk + " / Wasted " + box.n + (auto ? "<br>見習いモード EASY" : "<br>職人モード PRO");
   document.getElementById("gameover-screen").style.display = "flex";
 }
