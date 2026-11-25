@@ -53,20 +53,32 @@
     display:flex; align-items:center; justify-content:center; -webkit-touch-callout:none; }
   #edge-l{ left:4px; } #edge-r{ right:4px; }
   body.kbd .edge{ display:none; }
+  body.title #hud{ visibility:hidden; }
   body.title .edge, body.title #hint, body.title #status{ visibility:hidden; }
   #hint{ position:absolute; bottom:4px; left:0; right:0; text-align:center; color:#7fd; font-size:11px; opacity:.8; z-index:3; pointer-events:none; display:none; }
   body.kbd #hint, body:not(.touch) #hint{ display:block; }
   #title-screen, #gameover-screen{ position:absolute; inset:0; z-index:7; display:flex; align-items:center; justify-content:center;
     text-align:center; color:var(--neon-cyan); background:rgba(0,0,0,0.6); padding:12px; box-sizing:border-box; overflow:auto; }
-  #title-screen{ background:linear-gradient(90deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.85) 45%, rgba(0,0,0,.9) 100%); gap:24px; }
-  #gameover-screen{ flex-direction:column; gap:10px; }
   h1{ margin:0; color:var(--tako-red); text-shadow:0 0 12px var(--tako-red), 0 0 2px #fff; letter-spacing:2px; font-size:clamp(18px,3.6vw,32px); line-height:1.25; }
-  #title-screen .left{ display:flex; flex-direction:column; align-items:center; gap:8px; flex:none; }
-  #title-screen .right{ display:flex; flex-direction:column; align-items:center; gap:8px; }
-  #title-screen p{ margin:0; line-height:1.5; white-space:nowrap; }
-  #title-screen p.jp{ font-size:clamp(9px,1.55vw,13px); color:#d6fffa; }
-  #title-screen p.en{ font-size:clamp(9px,1.55vw,13px); color:#7fd8d0; }
-  #title-screen p.keys{ font-size:11px; opacity:.75; display:none; }
+  #title-screen{ background:rgba(0,0,0,.5); flex-direction:column; justify-content:space-between; gap:6px; padding:34px 12px 10px; cursor:pointer; }
+  #title-screen .pages{ flex:1; display:flex; align-items:center; justify-content:center; min-height:0; width:100%; }
+  #title-screen .page{ display:none; flex-direction:column; align-items:center; gap:8px; animation:pgIn .35s ease-out; }
+  #title-screen[data-page="0"] .p0, #title-screen[data-page="1"] .p1{ display:flex; }
+  @keyframes pgIn{ from{ opacity:0; transform:translateX(24px); } to{ opacity:1; transform:none; } }
+  #title-screen .p0 h1{ font-size:min(7vw, 11vh, 52px); text-shadow:0 0 14px var(--tako-red), 0 0 3px #fff, 0 3px 0 #000, 0 0 24px #000; }
+  #title-screen .p0{ background:rgba(0,0,0,.45); border-radius:14px; padding:6px 22px 10px; }
+  #title-screen .p1{ background:rgba(0,0,0,.62); border:1px solid #2a6a70; border-radius:10px; padding:8px 14px; }
+  #title-screen p{ margin:0; line-height:1.45; white-space:nowrap; }
+  #title-screen p.jp{ font-size:min(1.75vw, 3.6vh, 15px); color:#d6fffa; }
+  #title-screen p.en{ font-size:min(1.75vw, 3.6vh, 15px); color:#7fd8d0; }
+  #title-screen p.keys{ font-size:min(1.4vw, 3vh, 12px); opacity:.75; display:none; }
+  #title-screen .tbottom{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+  #title-screen .navrow{ display:flex; gap:10px; align-items:center; }
+  .pager{ font-family:inherit; font-size:11px; letter-spacing:1px; color:var(--neon-amber); background:rgba(2,20,30,.7);
+    border:1px solid var(--neon-amber); border-radius:6px; padding:4px 10px; cursor:pointer; display:flex; align-items:center; gap:8px; }
+  .pager .dots{ display:flex; gap:4px; }
+  .pager .dots i{ width:7px; height:7px; border-radius:50%; background:#5a4a20; }
+  #title-screen[data-page="0"] .pager .dots i:nth-child(1), #title-screen[data-page="1"] .pager .dots i:nth-child(2){ background:var(--neon-amber); box-shadow:0 0 5px var(--neon-amber); }
   body.kbd #title-screen p.keys, body:not(.touch) #title-screen p.keys{ display:block; }
   .by{ font-size:clamp(12px,2.2vw,18px); font-weight:bold; letter-spacing:3px; color:var(--neon-amber); text-shadow:0 0 10px var(--neon-amber), 0 0 2px #fff; opacity:0; animation:byIn .8s 1.5s forwards; }
   @keyframes byIn{ to{ opacity:.95; } }
@@ -116,21 +128,28 @@
   <div class="edge" id="edge-r">▶</div>
   <div id="hint">← → 移動 · Z 包丁 · X 爪楊枝 · 1〜6 売り場ジャンプ · あとはクリック<br>← → move · Z knife · X toothpick · 1-6 jump · click the rest</div>
 
-  <div id="title-screen">
-    <div class="left">
-      <h1>TAKO TAKO<br>COOKING</h1>
-      <div class="by">by Studio T2R0 ©</div>
-      <div style="font-size:12px;letter-spacing:2px;color:#ff2e88;border:1px solid #ff2e88;border-radius:6px;padding:2px 8px;">テスト版 TEST VERSION</div>
+  <div id="title-screen" data-page="0">
+    <div class="pages">
+      <div class="page p0">
+        <h1>TAKO TAKO<br>COOKING</h1>
+        <div class="by">by Studio T2R0 ©</div>
+        <div style="font-size:12px;letter-spacing:2px;color:#ff2e88;border:1px solid #ff2e88;border-radius:6px;padding:2px 8px;">テスト版 TEST VERSION</div>
+      </div>
+      <div class="page p1">
+        <p class="jp">タコさんウインナーを作ってお客さんに出そう！<br>冷蔵庫 → まな板 → フライヤー → カウンター<br>足と目、口を作ったら 揚げるよ でも 揚げ過ぎはNG！<br>お客さんがつまみなしで飲み潰れたら３人で閉店！<br>時間内に在庫を使い切ればコンプリート！</p>
+        <p class="en">Make octopus wieners for your customers!<br>Fridge → board → fryer → counter<br>Make the legs, eyes and mouth, then fry  but don't over-fry!<br>3 customers drunk with no snacks close the shop!<br>Use up the stock in time for a COMPLETE!</p>
+        <p class="keys">← → 移動 / Z 包丁 / X 爪楊枝 / 1〜6 売り場ジャンプ<br>← → move / Z knife / X toothpick / 1-6 jump</p>
+      </div>
     </div>
-    <div class="right">
-      <p class="jp">タコさんウインナーを作ってお客さんに出そう！<br>冷蔵庫 → まな板 → フライヤー → カウンター<br>足と目、口を作ったら 揚げるよ でも 揚げ過ぎはNG！<br>お客さんがつまみなしで飲み潰れたら３人で閉店！<br>時間内に在庫を使い切ればコンプリート！</p>
-      <p class="en">Make octopus wieners for your customers!<br>Fridge → board → fryer → counter<br>Make the legs, eyes and mouth, then fry  but don't over-fry!<br>3 customers drunk with no snacks close the shop!<br>Use up the stock in time for a COMPLETE!</p>
+    <div class="tbottom">
       <div class="btnrow">
         <button class="arcade" id="start-easy">START 見習い<small>一部の作業が自動 EASY</small></button>
         <button class="arcade" id="start-pro">START 職人<small>全部手作業 PRO</small></button>
       </div>
-      <a class="homelink" href="../index.html">◀ ゲーム一覧 ALL GAMES</a>
-      <p class="keys">← → 移動 / Z 包丁 / X 爪楊枝 / 1〜6 売り場ジャンプ<br>← → move / Z knife / X toothpick / 1-6 jump</p>
+      <div class="navrow">
+        <a class="homelink" href="../index.html">◀ ゲーム一覧 ALL GAMES</a>
+        <button class="pager" id="pager"><span class="dots"><i></i><i></i></span><span class="lbl"></span></button>
+      </div>
     </div>
   </div>
 
@@ -618,14 +637,19 @@ function updateCustomers(dt, demo){
 }
 /* title: the shop runs by itself in the background */
 function updateDemo(dt){
-  camX = clampCam(1060 + Math.sin(tAll*0.12)*420 - 200);
-  fryer.forEach(f=>{ if(f){ f.t += dt; if(f.t>COOK_GOOD-1) f.t = 0.3; } });
-  updateCustomers(dt, true);
-  seats.forEach(c=>{ if(c && c.st==="wait" && c.drink>3){ c.st="eat"; c.plate=PLATE_SIZE; c.eatT=EAT_EACH; } });
+  // title background: only the fryer. most wieners loop before browning, two of them burn
+  camX = FRY.x + FRY.w/2 - VW/2;
+  fryer.forEach((f,i)=>{
+    if(!f) return; f.t += dt;
+    if(f.burner){ if(f.t > COOK_BURN+4) f.t = 0; }
+    else if(f.t > COOK_GOOD-1) f.t = 0.3;
+    if(f.t > COOK_GOOD && Math.random() < dt*(f.t>COOK_BURN?6:2)){ const p=slotPos(i); smokes.push({x:p.x+(Math.random()-0.5)*20, y:p.y-48, t:1.2}); }
+  });
 }
 function demoInit(){
   freshState();
   [0.5,2,3.5,5,6.5,8,9.5].forEach((t,i)=>{ fryer[[0,1,2,4,5,7,8][i]] = {t}; });
+  fryer[3] = { t:9, burner:true }; fryer[9] = { t:13, burner:true };
   plates = [6,4,1]; bat = [1,1,1]; box.n = 2; box.items=[14,19]; fridge.stock = 30;
   board.has = true; board.cuts = 2; board.holes = 1; queue = 3; state.arriveT = 3;
 }
@@ -640,9 +664,18 @@ function render(){
   const g = ctx;
   g.clearRect(0,0,VW,VH);
   g.imageSmoothingEnabled = false;
-  g.save(); g.translate(-Math.round(camX), 0);
-  drawBack(g);
-  drawFridge(g); drawBoard(g); drawBat(g); drawFryer(g); drawPlates(g); drawBox(g); drawCounter(g);
+  g.save();
+  if(titleMode){
+    g.fillStyle = "#0c1824"; g.fillRect(0,0,VW,VH);
+    g.fillStyle = "#11202e"; for(let x=0;x<VW;x+=30) for(let y=0;y<VH;y+=30) g.fillRect(x+1,y+1,28,28);
+    const cx = FRY.x+FRY.w/2, cy = FRY.y+FRY.h/2, k = 1.25;
+    g.translate(VW/2, VH/2+18); g.scale(k,k); g.translate(-cx, -cy);
+    drawFryer(g);
+  } else {
+    g.translate(-Math.round(camX), 0);
+    drawBack(g);
+    drawFridge(g); drawBoard(g); drawBat(g); drawFryer(g); drawPlates(g); drawBox(g); drawCounter(g);
+  }
   smokes.forEach(s=>{ g.globalAlpha = Math.max(0,s.t/1.2)*0.5; g.fillStyle="#bbb"; g.beginPath(); g.arc(s.x,s.y,6+(1.2-s.t)*8,0,7); g.fill(); });
   g.globalAlpha = 1;
   g.textAlign="center"; g.font="bold 14px 'MS Gothic', monospace";
@@ -755,7 +788,7 @@ function drawFryer(g){
     else if(f.t < COOK_GOOD){ g.fillStyle="#3cff8a"; g.fillRect(bx,by,bw*(1-(f.t-COOK_MIN)/(COOK_GOOD-COOK_MIN)),5); }
     else { g.fillStyle = (tAll*8|0)%2 ? "#ff2e88" : "#ff8a3a"; g.fillRect(bx,by,bw,5); }
   }
-  label(g, FRY.x+FRY.w/2, FRY.y-14, "フライヤー " + fryer.filter(Boolean).length + "/" + FRYER_SLOTS, "FRYER");
+  if(!titleMode) label(g, FRY.x+FRY.w/2, FRY.y-14, "フライヤー " + fryer.filter(Boolean).length + "/" + FRYER_SLOTS, "FRYER");
 }
 function drawPlates(g){
   label(g, 1225, 84, "揚げ上がり皿", "PLATES");
@@ -912,7 +945,7 @@ function goTitle(){
   document.getElementById("gameover-screen").style.display = "none";
   document.getElementById("title-screen").style.display = "flex";
   quitBtn.classList.add("gone");
-  titleMode = true; document.body.classList.add("title"); demoInit(); updateHud(); bounceTitle();
+  titleMode = true; document.body.classList.add("title"); setPage(0); demoInit(); updateHud(); bounceTitle();
 }
 function bounceTitle(){
   const h = document.querySelector("#title-screen h1");
@@ -920,6 +953,22 @@ function bounceTitle(){
   let i = 0;
   h.innerHTML = h._txt.split("<br>").map(line => [...line].map(ch => ch===" " ? " " : `<span class="ch" style="animation-delay:${(i++)*0.06}s">${ch}</span>`).join("")).join("<br>");
 }
+/* title: tap or swipe flips between the title page and the how-to-play page */
+const titleEl = document.getElementById("title-screen");
+function setPage(p){
+  titleEl.dataset.page = p;
+  document.querySelector("#pager .lbl").textContent = p===0 ? "あそびかた HOW TO PLAY ▶" : "◀ タイトル TITLE";
+}
+function flipPage(){ setPage(titleEl.dataset.page==="0" ? 1 : 0); }
+let tSwipe = null;
+titleEl.addEventListener("pointerdown", e=>{ tSwipe = { x:e.clientX, y:e.clientY }; });
+titleEl.addEventListener("pointerup", e=>{
+  if(!tSwipe) return; const dx = e.clientX - tSwipe.x, dy = e.clientY - tSwipe.y; tSwipe = null;
+  if(e.target.closest("button.arcade, a")) return;
+  if(Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) setPage(dx < 0 ? 1 : 0);
+  else if(Math.abs(dx) < 10 && Math.abs(dy) < 10) flipPage();
+});
+setPage(0);
 
 let lastMode = false;
 document.getElementById("start-easy").addEventListener("click", ()=>{ lastMode = true; startGame(true); });
