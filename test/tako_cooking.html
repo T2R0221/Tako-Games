@@ -101,7 +101,20 @@
     background:#020617; color:var(--neon-cyan); text-align:center; font-size:15px; text-shadow:0 0 6px var(--neon-cyan); }
   #rotate .ph{ width:40px; height:66px; border:3px solid var(--neon-cyan); border-radius:8px; animation:rot 2s ease-in-out infinite; }
   @keyframes rot{ 0%,30%{ transform:rotate(0); } 60%,100%{ transform:rotate(-90deg); } }
-  @media (orientation:portrait){ body.touch #rotate{ display:flex; } }
+  @media (orientation:portrait){ body.touch:not(.title) #rotate{ display:flex; } }
+  /* portrait phone, title: title above, how-to-play below, no paging */
+  #title-screen .portnote{ display:none; font-size:12px; color:var(--neon-amber); }
+  @media (orientation:portrait){
+    body.touch.title{ align-items:flex-start; }   /* fryer animation stays visible at the top */
+    body.touch.title #title-screen{ position:fixed; top:calc(100vw * 400 / 860); justify-content:center; gap:14px; padding:14px 10px; background:#020617; }
+    body.touch.title #title-screen .pages{ flex:none; flex-direction:column; gap:14px; }
+    body.touch.title #title-screen .page{ display:flex; animation:none; }
+    body.touch.title #title-screen .p0 h1{ font-size:min(9vw, 40px); }
+    body.touch.title #title-screen p.jp{ font-size:min(3.3vw, 14px); }
+    body.touch.title #title-screen p.en{ font-size:min(2.6vw, 12px); }
+    body.touch.title #title-screen .pager{ display:none; }
+    body.touch.title #title-screen .portnote{ display:block; }
+  }
 </style>
 </head>
 <body>
@@ -146,6 +159,7 @@
         <button class="arcade" id="start-easy">START 見習い<small>一部の作業が自動 EASY</small></button>
         <button class="arcade" id="start-pro">START 職人<small>全部手作業 PRO</small></button>
       </div>
+      <div class="portnote">ゲームはスマホを横向きにして遊びます  Play in landscape</div>
       <div class="navrow">
         <a class="homelink" href="../index.html">◀ ゲーム一覧 ALL GAMES</a>
         <button class="pager" id="pager"><span class="dots"><i></i><i></i></span><span class="lbl"></span></button>
@@ -571,6 +585,8 @@ function tapWorld(x,y){
 }
 
 /* ---------- update ---------- */
+const portraitMQ = window.matchMedia("(orientation: portrait)");
+function portraitPhone(){ return document.body.classList.contains("touch") && portraitMQ.matches; }
 function update(dt){
   tAll += dt;
   // camera
@@ -584,6 +600,7 @@ function update(dt){
   smokes.forEach(s=>{ s.t -= dt; s.y -= dt*30; }); smokes = smokes.filter(s=>s.t>0);
   if(titleMode){ updateDemo(dt); return; }
   if(!state.running) return;
+  if(portraitPhone()) return;   // wait (clock stopped) until the phone is turned sideways
 
   state.time -= dt;
   if(state.time <= 0){ state.time = 0; endGame("time"); return; }
@@ -636,20 +653,29 @@ function updateCustomers(dt, demo){
   });
 }
 /* title: the shop runs by itself in the background */
+const demo = { spawnT:0, from:0, n:0 };
 function updateDemo(dt){
-  // title background: only the fryer. most wieners loop before browning, two of them burn
+  // title background: only the fryer. done wieners are taken out, burnt ones are thrown out,
+  // and a fresh one drops into a different free slot. about 2 in 5 are left to burn
   camX = FRY.x + FRY.w/2 - VW/2;
   fryer.forEach((f,i)=>{
     if(!f) return; f.t += dt;
-    if(f.burner){ if(f.t > COOK_BURN+4) f.t = 0; }
-    else if(f.t > COOK_GOOD-1) f.t = 0.3;
-    if(f.t > COOK_GOOD && Math.random() < dt*(f.t>COOK_BURN?6:2)){ const p=slotPos(i); smokes.push({x:p.x+(Math.random()-0.5)*20, y:p.y-48, t:1.2}); }
+    if((f.burner && f.t > COOK_BURN+2.5) || (!f.burner && f.t > COOK_MIN+2.5)){ fryer[i] = null; demo.from = i; }
+    else if(f.t > COOK_GOOD && Math.random() < dt*(f.t>COOK_BURN?6:2)){ const p=slotPos(i); smokes.push({x:p.x+(Math.random()-0.5)*20, y:p.y-48, t:1.2}); }
   });
+  demo.spawnT -= dt;
+  if(demo.spawnT <= 0 && fryer.filter(Boolean).length < 8){
+    for(let k=3;k<3+FRYER_SLOTS;k++){
+      const j = (demo.from + k) % FRYER_SLOTS;
+      if(!fryer[j]){ demo.n++; fryer[j] = { t:0, burner: demo.n%5===1 || demo.n%5===3 }; demo.from = j; break; }
+    }
+    demo.spawnT = 0.9;
+  }
 }
 function demoInit(){
   freshState();
-  [0.5,2,3.5,5,6.5,8,9.5].forEach((t,i)=>{ fryer[[0,1,2,4,5,7,8][i]] = {t}; });
-  fryer[3] = { t:9, burner:true }; fryer[9] = { t:13, burner:true };
+  [[0,0.5,0],[1,6,1],[2,3,0],[4,13,1],[5,1.5,0],[6,9,1],[8,5,0],[9,2.2,0]].forEach(([i,t,b])=>{ fryer[i] = { t, burner:!!b }; });
+  demo.spawnT = 0.9; demo.from = 3; demo.n = 0;
   plates = [6,4,1]; bat = [1,1,1]; box.n = 2; box.items=[14,19]; fridge.stock = 30;
   board.has = true; board.cuts = 2; board.holes = 1; queue = 3; state.arriveT = 3;
 }
